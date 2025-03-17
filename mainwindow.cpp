@@ -19,13 +19,13 @@ MainWindow::MainWindow(QWidget *parent)
     , m_ignore_pal_sig(false)
     , m_ignore_off_sig(false)
 {
-    //setWindowFlags(Qt::Window | Qt::FramelessWindowHint);
-    //setWindowFlags(Qt::Window);
     ui->setupUi(this);
     ui->menubar->hide();
     ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
     ui->lineEditIterMax->setValidator( new QIntValidator(1, 65536, this) );
     ui->buttonSave->setDisabled(true);
+
+    setWindowTitle("Mandelbrot App");
 
     m_ignore_pal_sig = true;
 
@@ -205,6 +205,19 @@ MainWindow::Calculate()
 
     drawImage();
 
+    setWindowTitle( QString("Mandelbrot App (%1,%2)->(%3,%4), it: %5, w: %6, h: %7, tc: %8, ss: %9, ms: %10")
+       .arg(m_calc_result.x1)
+       .arg(m_calc_result.y1)
+       .arg(m_calc_result.x2)
+       .arg(m_calc_result.y2)
+       .arg(m_calc_result.iter_mx)
+       .arg(m_calc_result.img_width)
+       .arg(m_calc_result.img_height)
+       .arg(m_calc_result.th_cnt)
+       .arg(m_calc_ss)
+       .arg(m_calc_result.time_ms));
+
+    /*
     ui->labelImageInfo->setText(
         QString("(%1,%2)->(%3,%4), iter: %5, w: %6, h: %7, tc: %8, ss: %9, msec: %10")
             .arg(m_calc_result.x1)
@@ -218,6 +231,7 @@ MainWindow::Calculate()
             .arg(m_calc_ss)
             .arg(m_calc_result.time_ms)
     );
+*/
 
     ui->buttonSave->setDisabled(false);
 }
