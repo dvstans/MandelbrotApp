@@ -1,0 +1,46 @@
+#ifndef MAINWINDOW_H
+#define MAINWINDOW_H
+
+#include <QMainWindow>
+#include <QString>
+#include <map>
+#include "mandelbrotcalc.h"
+#include "palette.h"
+
+QT_BEGIN_NAMESPACE
+namespace Ui {
+class MainWindow;
+}
+QT_END_NAMESPACE
+
+class MainWindow : public QMainWindow
+{
+    Q_OBJECT
+
+public:
+    MainWindow(QWidget *parent = nullptr);
+    ~MainWindow();
+
+public slots:
+    void Exit();
+    void Calculate();
+    void PaletteChange( const QString &text );
+    void PaletteOffsetSliderChanged(int);
+    void PaletteScaleSliderChanged(int);
+
+private:
+    uchar * renderImage( MandelbrotCalc::CalcResult & a_result );
+    void    drawImage();
+
+    Ui::MainWindow *            ui;
+    MandelbrotCalc              m_calc;
+    Palette                     m_palette;
+    MandelbrotCalc::CalcResult  m_calc_result;
+    std::map<std::string,std::vector<Palette::ColorBand>>  m_palette_map;
+    uint16_t                    m_palette_scale;
+    uint32_t                    m_palette_offset;
+    bool                        m_ignore_pal_sig;
+    bool                        m_ignore_off_sig;
+};
+
+#endif // MAINWINDOW_H
