@@ -428,6 +428,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>buttonSave</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>SaveImage()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>613</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>279</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>Calculate()</slot>
@@ -435,5 +451,6 @@
   <slot>PaletteChange(QString)</slot>
   <slot>PaletteOffsetSliderChanged(int)</slot>
   <slot>PaletteScaleSliderChanged(int)</slot>
+  <slot>SaveImage()</slot>
  </slots>
 </ui>

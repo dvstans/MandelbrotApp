@@ -27,15 +27,17 @@ public slots:
     void PaletteChange( const QString &text );
     void PaletteOffsetSliderChanged(int);
     void PaletteScaleSliderChanged(int);
+    void SaveImage();
 
 private:
-    uchar * renderImage( MandelbrotCalc::CalcResult & a_result );
+    uchar * renderImage();
     void    drawImage();
 
     Ui::MainWindow *            ui;
     MandelbrotCalc              m_calc;
     Palette                     m_palette;
     MandelbrotCalc::CalcResult  m_calc_result;
+    uint8_t                     m_calc_ss;
     std::map<std::string,std::vector<Palette::ColorBand>>  m_palette_map;
     uint16_t                    m_palette_scale;
     uint32_t                    m_palette_offset;

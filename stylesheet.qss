@@ -171,6 +171,12 @@ QToolButton:checked
     border: 1px solid #222;
 }
 
+QToolButton::disabled
+{
+    background-color: #404040;
+    color: #656565;
+    border-color: #051a39;
+}
 
 /*-----QPushButton-----*/
 QPushButton

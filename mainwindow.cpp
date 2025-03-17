@@ -2,6 +2,8 @@
 
 #include <QImage>
 #include <QPixmap>
+#include <QFileDialog>
+#include <QImageWriter>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -23,6 +25,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->menubar->hide();
     ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
     ui->lineEditIterMax->setValidator( new QIntValidator(1, 65536, this) );
+    ui->buttonSave->setDisabled(true);
 
     m_ignore_pal_sig = true;
 
@@ -70,6 +73,40 @@ MainWindow::Exit()
 {
     m_calc.stop();
     close();
+}
+
+void
+MainWindow::SaveImage()
+{
+    QString fname = QFileDialog::getSaveFileName( this, "Save Image", "image.png", "Images (*.png)");
+
+    if ( fname.length() )
+    {
+        // Save file
+        QImageWriter writer(fname);
+        QImage image = ui->labelImage->pixmap().toImage();
+
+        // TODO: QImageWriter does not support EXIF metadata, must use an external library
+        /*
+        QString comments = QString("(%1,%2)->(%3,%4), iter: %5, w: %6, h: %7, tc: %8, ss: %9, msec: %10")
+            .arg(m_calc_result.x1)
+            .arg(m_calc_result.y1)
+            .arg(m_calc_result.x2)
+            .arg(m_calc_result.y2)
+            .arg(m_calc_result.iter_mx)
+            .arg(m_calc_result.img_width)
+            .arg(m_calc_result.img_height)
+            .arg(m_calc_result.th_cnt)
+            .arg(m_calc_ss)
+            .arg(m_calc_result.time_ms);
+
+        writer.setFormat("PNG");
+        writer.setText("Title", "Mandelbrot Image");
+        writer.setText("Comments", comments );
+        */
+
+        writer.write( image );
+    }
 }
 
 void
@@ -154,20 +191,22 @@ MainWindow::Calculate()
 {
     MandelbrotCalc::CalcParams params;
 
-    params.res = ui->lineEditResolution->text().toUShort();
+    m_calc_ss = ui->spinBoxSuperSample->value();
+
+    params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
     params.iter_mx = ui->lineEditIterMax->text().toUShort();
     params.th_cnt = ui->spinBoxThreadCount->value();
-    params.x1 = -2;
-    params.y1 = -2;
-    params.x2 = 2;
-    params.y2 = 2;
+    params.x1 = -0.5;
+    params.y1 = .5;
+    params.x2 = .5;
+    params.y2 = 1.5;
 
     m_calc_result = m_calc.calculate( params );
 
     drawImage();
 
     ui->labelImageInfo->setText(
-        QString("(%1,%2)->(%3,%4), iter: %5, w: %6, h: %7, tc: %8, msec: %9")
+        QString("(%1,%2)->(%3,%4), iter: %5, w: %6, h: %7, tc: %8, ss: %9, msec: %10")
             .arg(m_calc_result.x1)
             .arg(m_calc_result.y1)
             .arg(m_calc_result.x2)
@@ -176,46 +215,60 @@ MainWindow::Calculate()
             .arg(m_calc_result.img_width)
             .arg(m_calc_result.img_height)
             .arg(m_calc_result.th_cnt)
+            .arg(m_calc_ss)
             .arg(m_calc_result.time_ms)
     );
+
+    ui->buttonSave->setDisabled(false);
 }
 
 void
 MainWindow::drawImage()
 {
-    uchar *imbuffer = renderImage( m_calc_result );
+    uchar *imbuffer = renderImage();
 
     QImage image(imbuffer, m_calc_result.img_width, m_calc_result.img_height, QImage::Format_ARGB32, [](void* a_data){
             delete[] (uchar*)a_data;
         }, imbuffer );
 
-    ui->labelImage->setPixmap(QPixmap::fromImage(image));
+    if ( m_calc_ss > 1 )
+    {
+        ui->labelImage->setPixmap(QPixmap::fromImage(image.scaled( m_calc_result.img_width / m_calc_ss, m_calc_result.img_height / m_calc_ss, Qt::KeepAspectRatio, Qt::SmoothTransformation )));
+    }
+    else
+    {
+        ui->labelImage->setPixmap(QPixmap::fromImage(image));
+    }
 }
 
 
 uchar *
-MainWindow::renderImage( MandelbrotCalc::CalcResult & a_result )
+MainWindow::renderImage()
 {
-    int stride = a_result.img_width*4; // + pad;
-    uchar *imbuffer = new uchar[stride*a_result.img_height];
-    const uint16_t * res = a_result.img_data;
+    int imstride = m_calc_result.img_width*4;
+    uchar *imbuffer = new uchar[imstride*m_calc_result.img_height];
     int x;
-    uint32_t *ibuf;
+    const uint16_t * itbuf;
+    uint32_t *imbuf;
 
     const std::vector<uint32_t> & palette = m_palette.render( m_palette_scale );
 
-    // Must reverse y-axis due to difference in mathematical and graphical origin
-    for ( int y = a_result.img_height - 1; y > -1; y-- ){
-        ibuf = (uint32_t *)(imbuffer + y*stride);
+    itbuf = m_calc_result.img_data;
 
-        for ( x = 0; x < a_result.img_width; x++, res++ ){
-            if ( *res == 0 )
+    // Must reverse y-axis due to difference in mathematical and graphical origin
+    for ( int y = m_calc_result.img_height - 1; y > -1; y-- )
+    {
+        imbuf = (uint32_t *)(imbuffer + y*imstride);
+
+        for ( x = 0; x < m_calc_result.img_width; x++, itbuf++ )
+        {
+            if ( *itbuf == 0 )
             {
-                *ibuf++ = 0xFF000000;
+                *imbuf++ = 0xFF000000;
             }
             else
             {
-                *ibuf++ = palette[(*res + m_palette_offset)% palette.size()];
+                *imbuf++ = palette[(*itbuf + m_palette_offset)% palette.size()];
             }
         }
     }
