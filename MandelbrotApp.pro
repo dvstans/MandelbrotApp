@@ -12,11 +12,13 @@ SOURCES += \
     main.cpp \
     mainwindow.cpp \
     mandelbrotcalc.cpp \
+    mandelbrotviewer.cpp \
     palette.cpp
 
 HEADERS += \
     mainwindow.h \
     mandelbrotcalc.h \
+    mandelbrotviewer.h \
     palette.h
 
 FORMS += \

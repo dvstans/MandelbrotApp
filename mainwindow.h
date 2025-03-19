@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QString>
 #include <map>
+#include "MandelbrotViewer.h"
 #include "mandelbrotcalc.h"
 #include "palette.h"
 
@@ -13,7 +14,8 @@ class MainWindow;
 }
 QT_END_NAMESPACE
 
-class MainWindow : public QMainWindow
+
+class MainWindow : public QMainWindow, IMandelbrotViewerObserver
 {
     Q_OBJECT
 
@@ -24,6 +26,7 @@ public:
 public slots:
     void Exit();
     void Calculate();
+    void ZoomTop();
     void PaletteChange( const QString &text );
     void PaletteOffsetSliderChanged(int);
     void PaletteScaleSliderChanged(int);
@@ -32,9 +35,11 @@ public slots:
 private:
     uchar * renderImage();
     void    drawImage();
+    void    zoomIn( const QRectF & rect );
 
     Ui::MainWindow *            ui;
     MandelbrotCalc              m_calc;
+    MandelbrotViewer *          m_viewer;
     Palette                     m_palette;
     MandelbrotCalc::CalcResult  m_calc_result;
     uint8_t                     m_calc_ss;
@@ -43,6 +48,9 @@ private:
     uint32_t                    m_palette_offset;
     bool                        m_ignore_pal_sig;
     bool                        m_ignore_off_sig;
+    MandelbrotCalc::CalcParams  m_calc_params;
+
+    friend class MandelbrotViewer;
 };
 
 #endif // MAINWINDOW_H

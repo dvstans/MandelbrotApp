@@ -2,6 +2,7 @@
 
 #include <QImage>
 #include <QPixmap>
+#include <QGraphicsPixmapItem>
 #include <QFileDialog>
 #include <QImageWriter>
 
@@ -27,9 +28,10 @@ MainWindow::MainWindow(QWidget *parent)
 
     setWindowTitle("Mandelbrot App");
 
+    // Setup built-in palettes
+
     m_ignore_pal_sig = true;
 
-    // Add built-in palettes
     m_palette_map["Default"] = {
         {0xFFFF0000,10,Palette::CM_LINEAR},
         {0xFFFFFF00,10,Palette::CM_LINEAR},
@@ -55,11 +57,20 @@ MainWindow::MainWindow(QWidget *parent)
 
     uint32_t ps = m_palette.getPaletteSize();
 
+    // Setup palette sliders
     m_ignore_off_sig = true;
     ui->sliderPalOffset->setMaximum( ps );
     m_ignore_off_sig = false;
 
+    // Setup MandelbrotViewer
+    m_viewer = new MandelbrotViewer( *ui->frameViewer, *this );
 
+    m_calc_params.x1 = -2;
+    m_calc_params.y1 = -2;
+    m_calc_params.x2 = 2;
+    m_calc_params.y2 = 2;
+
+    Calculate();
 }
 
 MainWindow::~MainWindow()
@@ -84,7 +95,7 @@ MainWindow::SaveImage()
     {
         // Save file
         QImageWriter writer(fname);
-        QImage image = ui->labelImage->pixmap().toImage();
+        QImage image = m_viewer->getImage();
 
         // TODO: QImageWriter does not support EXIF metadata, must use an external library
         /*
@@ -189,19 +200,15 @@ MainWindow::PaletteScaleSliderChanged( int a_scale )
 void
 MainWindow::Calculate()
 {
-    MandelbrotCalc::CalcParams params;
+    ui->buttonCalc->setDisabled(true);
 
     m_calc_ss = ui->spinBoxSuperSample->value();
 
-    params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
-    params.iter_mx = ui->lineEditIterMax->text().toUShort();
-    params.th_cnt = ui->spinBoxThreadCount->value();
-    params.x1 = -0.5;
-    params.y1 = .5;
-    params.x2 = .5;
-    params.y2 = 1.5;
+    m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
+    m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
+    m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
 
-    m_calc_result = m_calc.calculate( params );
+    m_calc_result = m_calc.calculate( m_calc_params );
 
     drawImage();
 
@@ -232,7 +239,7 @@ MainWindow::Calculate()
             .arg(m_calc_result.time_ms)
     );
 */
-
+    ui->buttonCalc->setDisabled(false);
     ui->buttonSave->setDisabled(false);
 }
 
@@ -247,14 +254,45 @@ MainWindow::drawImage()
 
     if ( m_calc_ss > 1 )
     {
-        ui->labelImage->setPixmap(QPixmap::fromImage(image.scaled( m_calc_result.img_width / m_calc_ss, m_calc_result.img_height / m_calc_ss, Qt::KeepAspectRatio, Qt::SmoothTransformation )));
+        m_viewer->setImage( image.scaled( m_calc_result.img_width / m_calc_ss, m_calc_result.img_height / m_calc_ss, Qt::KeepAspectRatio, Qt::SmoothTransformation ));
+        //ui->labelImage->setPixmap(QPixmap::fromImage(image.scaled( m_calc_result.img_width / m_calc_ss, m_calc_result.img_height / m_calc_ss, Qt::KeepAspectRatio, Qt::SmoothTransformation )));
     }
     else
     {
-        ui->labelImage->setPixmap(QPixmap::fromImage(image));
+        m_viewer->setImage( image );
+        //ui->labelImage->setPixmap(QPixmap::fromImage(image));
     }
 }
 
+void
+MainWindow::ZoomTop()
+{
+    m_calc_params.x1 = -2;
+    m_calc_params.y1 = -2;
+    m_calc_params.x2 = 2;
+    m_calc_params.y2 = 2;
+
+    Calculate();
+}
+
+void
+MainWindow::zoomIn( const QRectF & rect )
+{
+    //cout << "rect: " << rect.x() << " " << rect.y() << " " << rect.width() << " " << rect.height() << endl;
+
+    // Calc new set coords based on new image coords (rect)
+    double sx = (m_calc_params.x2-m_calc_params.x1)*m_calc_ss/m_calc_result.img_width;
+    double sy = (m_calc_params.y2-m_calc_params.y1)*m_calc_ss/m_calc_result.img_height;
+
+    m_calc_params.x1 = m_calc_params.x1 + rect.x()*sx;
+    m_calc_params.x2 = m_calc_params.x1 + (rect.width()-1)*sx;
+    m_calc_params.y1 = m_calc_params.y1 + ((m_calc_result.img_height/m_calc_ss) - (rect.y() + rect.height() - 1))*sy;
+    m_calc_params.y2 = m_calc_params.y1 + (rect.height()-1)*sy;
+
+    //cout << "bounds: " << m_calc_params.x1 << " " << m_calc_params.y1 << " " << m_calc_params.x2 << " " << m_calc_params.y2 << endl;
+
+    Calculate();
+}
 
 uchar *
 MainWindow::renderImage()

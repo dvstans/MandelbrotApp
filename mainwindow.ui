@@ -15,21 +15,6 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
-    <property name="spacing">
-     <number>2</number>
-    </property>
-    <property name="leftMargin">
-     <number>2</number>
-    </property>
-    <property name="topMargin">
-     <number>2</number>
-    </property>
-    <property name="rightMargin">
-     <number>2</number>
-    </property>
-    <property name="bottomMargin">
-     <number>2</number>
-    </property>
     <item>
      <widget class="QFrame" name="frameToolbar">
       <property name="sizePolicy">
@@ -67,6 +52,13 @@
         <widget class="QToolButton" name="buttonCalc">
          <property name="text">
           <string>Calc</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="buttonTop">
+         <property name="text">
+          <string>Top</string>
          </property>
         </widget>
        </item>
@@ -258,72 +250,19 @@
      </widget>
     </item>
     <item>
-     <widget class="QScrollArea" name="scrollArea">
+     <widget class="QFrame" name="frameViewer">
+      <property name="sizePolicy">
+       <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+        <horstretch>0</horstretch>
+        <verstretch>0</verstretch>
+       </sizepolicy>
+      </property>
       <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
+       <enum>QFrame::StyledPanel</enum>
       </property>
-      <property name="widgetResizable">
-       <bool>true</bool>
+      <property name="frameShadow">
+       <enum>QFrame::Raised</enum>
       </property>
-      <widget class="QWidget" name="scrollAreaWidgetContents">
-       <property name="geometry">
-        <rect>
-         <x>0</x>
-         <y>0</y>
-         <width>796</width>
-         <height>490</height>
-        </rect>
-       </property>
-       <property name="styleSheet">
-        <string notr="true">background-color: #000</string>
-       </property>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <property name="spacing">
-         <number>0</number>
-        </property>
-        <property name="leftMargin">
-         <number>0</number>
-        </property>
-        <property name="topMargin">
-         <number>0</number>
-        </property>
-        <property name="rightMargin">
-         <number>0</number>
-        </property>
-        <property name="bottomMargin">
-         <number>0</number>
-        </property>
-        <item>
-         <widget class="QLabel" name="labelImage">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="styleSheet">
-           <string notr="true">width: 10</string>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <spacer name="verticalSpacer">
-          <property name="orientation">
-           <enum>Qt::Vertical</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>20</width>
-            <height>40</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-       </layout>
-      </widget>
      </widget>
     </item>
    </layout>
@@ -450,6 +389,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>buttonTop</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>ZoomTop()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>66</x>
+     <y>42</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>279</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>Calculate()</slot>
@@ -458,5 +413,6 @@
   <slot>PaletteOffsetSliderChanged(int)</slot>
   <slot>PaletteScaleSliderChanged(int)</slot>
   <slot>SaveImage()</slot>
+  <slot>ZoomTop()</slot>
  </slots>
 </ui>
