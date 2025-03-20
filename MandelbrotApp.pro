@@ -13,16 +13,19 @@ SOURCES += \
     mainwindow.cpp \
     mandelbrotcalc.cpp \
     mandelbrotviewer.cpp \
-    palette.cpp
+    palette.cpp \
+    paletteeditdialog.cpp
 
 HEADERS += \
     mainwindow.h \
     mandelbrotcalc.h \
     mandelbrotviewer.h \
-    palette.h
+    palette.h \
+    paletteeditdialog.h
 
 FORMS += \
-    mainwindow.ui
+    mainwindow.ui \
+    paletteeditdialog.ui
 
 # Default rules for deployment.
 qnx: target.path = /tmp/$${TARGET}/bin

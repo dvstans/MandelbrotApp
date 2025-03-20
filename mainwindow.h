@@ -8,6 +8,7 @@
 #include "MandelbrotViewer.h"
 #include "mandelbrotcalc.h"
 #include "palette.h"
+#include "paletteeditdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -31,7 +32,8 @@ public slots:
     void prev();
     void next();
     void aspectChange( int index );
-    void PaletteChange( const QString &text );
+    void paletteSelect( const QString &text );
+    void paletteEdit();
     void PaletteOffsetSliderChanged(int);
     void PaletteScaleSliderChanged(int);
     void SaveImage();
@@ -60,14 +62,17 @@ private:
     Ui::MainWindow *            ui;
     MandelbrotCalc              m_calc;
     MandelbrotViewer *          m_viewer;
+    PaletteEditDialog           m_palette_edit_dlg;
     Palette                     m_palette;
     MandelbrotCalc::CalcResult  m_calc_result;
     uint8_t                     m_calc_ss;
     std::map<std::string,std::vector<Palette::ColorBand>>  m_palette_map;
+    std::string                 m_cur_palette_name;
     uint16_t                    m_palette_scale;
     uint32_t                    m_palette_offset;
     bool                        m_ignore_pal_sig;
     bool                        m_ignore_off_sig;
+    bool                        m_ignore_aspect_sig;
     MandelbrotCalc::CalcParams  m_calc_params;
     std::vector<AspectRatio>    m_aspect_ratios;
     std::vector<CalcPos>        m_calc_history;

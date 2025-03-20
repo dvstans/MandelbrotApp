@@ -9,12 +9,14 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 using namespace std;
 
 MainWindow::MainWindow(QWidget *parent):
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     m_calc(true,8),
+    m_palette_edit_dlg(this),
     m_palette_scale(1),
     m_palette_offset(0),
     m_ignore_pal_sig(false),
@@ -22,11 +24,21 @@ MainWindow::MainWindow(QWidget *parent):
     m_calc_history_idx(0)
 {
     setWindowTitle("Mandelbrot App");
-
     ui->setupUi(this);
+
+    // Setup MandelbrotViewer
+    m_viewer = new MandelbrotViewer( *ui->frameViewer, *this );
+
+    m_calc_params.x1 = -2;
+    m_calc_params.y1 = -2;
+    m_calc_params.x2 = 2;
+    m_calc_params.y2 = 2;
+
+    // Adjust various UI components
     ui->menubar->hide();
     ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
     ui->lineEditIterMax->setValidator( new QIntValidator(1, 65536, this) );
+    ui->buttonLoad->setDisabled(true); // TODO Reenable when feature implemented
     ui->buttonSave->setDisabled(true);
     ui->buttonTop->setDisabled(true);
     ui->buttonNext->setDisabled(true);
@@ -55,10 +67,15 @@ MainWindow::MainWindow(QWidget *parent):
         {"1:1",1,1}
     };
 
+    m_ignore_aspect_sig = true;
     for ( vector<AspectRatio>::const_iterator a = m_aspect_ratios.begin(); a != m_aspect_ratios.end(); a++ )
     {
         ui->comboBoxAspect->addItem(a->name);
     }
+
+    ui->comboBoxAspect->setCurrentIndex( 0 );
+    m_viewer->setAspectRatio( 0, 0 );
+    m_ignore_aspect_sig = false;
 
     // Setup built-in palettes
 
@@ -103,22 +120,14 @@ MainWindow::MainWindow(QWidget *parent):
     ui->comboBoxPalette->setCurrentIndex(0);
     m_ignore_pal_sig = false;
 
-    m_palette.setColors( m_palette_map["Rainbow"] );
-
-    uint32_t ps = m_palette.getPaletteSize();
+    // Set initial palette
+    m_cur_palette_name = "Rainbow";
+    m_palette.setColors( m_palette_map[m_cur_palette_name] );
 
     // Setup palette sliders
     m_ignore_off_sig = true;
-    ui->sliderPalOffset->setMaximum( ps );
+    ui->sliderPalOffset->setMaximum( m_palette.getPaletteSize() );
     m_ignore_off_sig = false;
-
-    // Setup MandelbrotViewer
-    m_viewer = new MandelbrotViewer( *ui->frameViewer, *this );
-
-    m_calc_params.x1 = -2;
-    m_calc_params.y1 = -2;
-    m_calc_params.x2 = 2;
-    m_calc_params.y2 = 2;
 
     Calculate();
 }
@@ -174,13 +183,15 @@ MainWindow::SaveImage()
 void
 MainWindow::aspectChange( int a_index )
 {
-    cout << a_index << endl;
+    if ( m_ignore_aspect_sig )
+        return;
+
     m_viewer->setAspectRatio( m_aspect_ratios[a_index].major, m_aspect_ratios[a_index].minor );
 }
 
 
 void
-MainWindow::PaletteChange( const QString &a_text )
+MainWindow::paletteSelect( const QString &a_text )
 {
     if ( m_ignore_pal_sig )
         return;
@@ -206,6 +217,15 @@ MainWindow::PaletteChange( const QString &a_text )
         drawImage();
     }
 }
+
+
+void
+MainWindow::paletteEdit()
+{
+    if (m_palette_edit_dlg.isHidden() )
+        m_palette_edit_dlg.showWithPos();
+}
+
 
 void
 MainWindow::PaletteOffsetSliderChanged( int a_offset )

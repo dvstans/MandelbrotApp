@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 
 #include <QApplication>
+#include <QStyleFactory>
 #include <QFile>
 #include <iostream>
 
@@ -10,19 +11,11 @@ int main(int argc, char *argv[])
 
     QApplication a(argc, argv);
 
-    // Load an application style
-    QFile styleFile( ":/stylesheet.qss");
-    styleFile.open( QFile::ReadOnly );
-    QString style( styleFile.readAll() );
-    a.setStyleSheet( style );
+    // Set application style
+    a.setStyle(QStyleFactory::create("Fusion"));
 
     MainWindow w;
     w.show();
 
-    auto ret = a.exec();
-
-    std::cout << "exec ret: " << ret << std::endl;
-
-    return ret;
-    //return a.exec();
+    return a.exec();
 }

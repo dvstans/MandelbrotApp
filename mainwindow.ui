@@ -231,7 +231,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="buttonPalette">
+        <widget class="QToolButton" name="buttonPaletteEdit">
          <property name="toolTip">
           <string>Edit palette</string>
          </property>
@@ -417,7 +417,7 @@
    <sender>comboBoxPalette</sender>
    <signal>currentTextChanged(QString)</signal>
    <receiver>MainWindow</receiver>
-   <slot>PaletteChange(QString)</slot>
+   <slot>paletteSelect(QString)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>476</x>
@@ -541,11 +541,26 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>buttonPaletteEdit</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>paletteEdit()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>720</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>439</x>
+     <y>381</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>Calculate()</slot>
   <slot>Exit()</slot>
-  <slot>PaletteChange(QString)</slot>
   <slot>PaletteOffsetSliderChanged(int)</slot>
   <slot>PaletteScaleSliderChanged(int)</slot>
   <slot>SaveImage()</slot>
@@ -553,5 +568,7 @@
   <slot>prev()</slot>
   <slot>next()</slot>
   <slot>aspectChange(int)</slot>
+  <slot>paletteSelect(QString)</slot>
+  <slot>paletteEdit()</slot>
  </slots>
 </ui>
