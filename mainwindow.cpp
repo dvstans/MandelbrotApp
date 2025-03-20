@@ -11,20 +11,24 @@
 
 using namespace std;
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent)
-    , ui(new Ui::MainWindow)
-    , m_calc(true,8)
-    , m_palette_scale(1)
-    , m_palette_offset(0)
-    , m_ignore_pal_sig(false)
-    , m_ignore_off_sig(false)
+MainWindow::MainWindow(QWidget *parent):
+    QMainWindow(parent),
+    ui(new Ui::MainWindow),
+    m_calc(true,8),
+    m_palette_scale(1),
+    m_palette_offset(0),
+    m_ignore_pal_sig(false),
+    m_ignore_off_sig(false),
+    m_calc_history_idx(0)
 {
     ui->setupUi(this);
     ui->menubar->hide();
     ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
     ui->lineEditIterMax->setValidator( new QIntValidator(1, 65536, this) );
     ui->buttonSave->setDisabled(true);
+    ui->buttonTop->setDisabled(true);
+    ui->buttonNext->setDisabled(true);
+    ui->buttonPrev->setDisabled(true);
 
     setWindowTitle("Mandelbrot App");
 
@@ -273,7 +277,64 @@ MainWindow::ZoomTop()
     m_calc_params.y2 = 2;
 
     Calculate();
+
+    ui->buttonTop->setDisabled(true);
+    ui->buttonNext->setDisabled(m_calc_history.size() == 0);
+    ui->buttonPrev->setDisabled(true);
+    m_calc_history_idx = 0;
 }
+
+
+void
+MainWindow::prev()
+{
+    if ( m_calc_history_idx > 0 )
+    {
+        ui->buttonNext->setDisabled(false);
+
+        if( --m_calc_history_idx == 0 )
+        {
+            ui->buttonTop->setDisabled(true);
+            ui->buttonPrev->setDisabled(true);
+            m_calc_params.x1 = -2;
+            m_calc_params.y1 = -2;
+            m_calc_params.x2 = 2;
+            m_calc_params.y2 = 2;
+        }
+        else
+        {
+            const CalcPos & pos = m_calc_history[m_calc_history_idx-1];
+            m_calc_params.x1 = pos.x1;
+            m_calc_params.y1 = pos.y1;
+            m_calc_params.x2 = pos.x2;
+            m_calc_params.y2 = pos.y2;
+        }
+
+        Calculate();
+    }
+}
+
+
+void
+MainWindow::next()
+{
+    if ( m_calc_history_idx < m_calc_history.size() )
+    {
+        m_calc_history_idx++;
+        ui->buttonTop->setDisabled( false );
+        ui->buttonPrev->setDisabled( false );
+        ui->buttonNext->setDisabled( m_calc_history_idx >= m_calc_history.size() );
+
+        const CalcPos & pos = m_calc_history[m_calc_history_idx-1];
+        m_calc_params.x1 = pos.x1;
+        m_calc_params.y1 = pos.y1;
+        m_calc_params.x2 = pos.x2;
+        m_calc_params.y2 = pos.y2;
+
+        Calculate();
+    }
+}
+
 
 void
 MainWindow::zoomIn( const QRectF & rect )
@@ -292,7 +353,47 @@ MainWindow::zoomIn( const QRectF & rect )
     //cout << "bounds: " << m_calc_params.x1 << " " << m_calc_params.y1 << " " << m_calc_params.x2 << " " << m_calc_params.y2 << endl;
 
     Calculate();
+
+    CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
+
+    // Zooming in truncates any positions past current history index
+    m_calc_history.resize(m_calc_history_idx);
+    m_calc_history.push_back( pos );
+    m_calc_history_idx++;
+
+    ui->buttonTop->setDisabled(false);
+    ui->buttonNext->setDisabled(true);
+    ui->buttonPrev->setDisabled(false);
 }
+
+
+void
+MainWindow::recenter( const QPointF & a_pos )
+{
+    double sx = (m_calc_params.x2-m_calc_params.x1)*m_calc_ss/m_calc_result.img_width;
+    double sy = (m_calc_params.y2-m_calc_params.y1)*m_calc_ss/m_calc_result.img_height;
+    double dx = (a_pos.x() - (m_calc_result.img_width/(2*m_calc_ss)))*sx;
+    double dy = -(a_pos.y() - (m_calc_result.img_height/(2*m_calc_ss)))*sy;
+
+    m_calc_params.x1 += dx;
+    m_calc_params.x2 += dx;
+    m_calc_params.y1 += dy;
+    m_calc_params.y2 += dy;
+
+    Calculate();
+
+    CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
+
+    // Recentering in truncates any positions past current history index
+    m_calc_history.resize(m_calc_history_idx);
+    m_calc_history.push_back( pos );
+    m_calc_history_idx++;
+
+    ui->buttonTop->setDisabled(false);
+    ui->buttonNext->setDisabled(true);
+    ui->buttonPrev->setDisabled(false);
+}
+
 
 uchar *
 MainWindow::renderImage()

@@ -1,3 +1,4 @@
+#include<cmath>
 #include "palette.h"
 
 using namespace std;

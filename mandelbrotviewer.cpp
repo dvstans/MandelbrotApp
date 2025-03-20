@@ -54,12 +54,13 @@ MandelbrotViewer::setImage(  const QImage & image )
 void
 MandelbrotViewer::mousePressEvent( QMouseEvent *a_event )
 {
+    m_buttons = a_event->buttons();
     QPointF pos = mapToScene(a_event->pos());
 
     //cout << a_event->pos().x() << "," << a_event->pos().y() << " -> " << pos.x() << "," << pos.y() << endl;
 
     // Start zoom window on left mouse button down event
-    if ( a_event->isBeginEvent() && a_event->buttons() == Qt::LeftButton )
+    if ( /*a_event->isBeginEvent() &&*/ a_event->buttons() == Qt::LeftButton && a_event->modifiers() == Qt::NoModifier )
     {
         m_dragging = true;
         m_sel_origin = pos;
@@ -110,6 +111,16 @@ MandelbrotViewer::mouseReleaseEvent( QMouseEvent *a_event )
         if ( m_sel_rect.width() && m_sel_rect.height() )
         {
             m_observer.zoomIn( m_sel_rect );
+        }
+    }
+    else
+    {
+        cout << "but " << a_event->buttons() << endl;
+        cout << "mod " << a_event->modifiers() << endl;
+
+        if ( m_buttons == Qt::LeftButton && a_event->modifiers() == Qt::ControlModifier )
+        {
+            m_observer.recenter( mapToScene( a_event->pos() ));
         }
     }
 

@@ -9,6 +9,7 @@ class IMandelbrotViewerObserver
 {
 public:
     virtual void zoomIn( const QRectF & rect ) = 0;
+    virtual void recenter( const QPointF & pos ) = 0;
 };
 
 class MandelbrotViewer : public QGraphicsView
@@ -32,6 +33,7 @@ private:
     QGraphicsRectItem *         m_view_rect;
     QGraphicsPixmapItem *       m_view_pixmap;
     bool                        m_dragging;
+    uint32_t                    m_buttons;
     QPointF                     m_sel_origin;
     QRectF                      m_sel_rect;
     int                         m_width;

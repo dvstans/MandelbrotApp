@@ -24,10 +24,10 @@
        </sizepolicy>
       </property>
       <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
+       <enum>QFrame::Shape::NoFrame</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Plain</enum>
+       <enum>QFrame::Shadow::Plain</enum>
       </property>
       <property name="lineWidth">
        <number>0</number>
@@ -59,6 +59,20 @@
         <widget class="QToolButton" name="buttonTop">
          <property name="text">
           <string>Top</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="buttonPrev">
+         <property name="text">
+          <string>Prev</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="buttonNext">
+         <property name="text">
+          <string>Next</string>
          </property>
         </widget>
        </item>
@@ -172,7 +186,7 @@
        <item>
         <spacer name="horizontalSpacer">
          <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
          <property name="sizeHint" stdset="0">
           <size>
@@ -188,10 +202,10 @@
     <item>
      <widget class="QFrame" name="frame_2">
       <property name="frameShape">
-       <enum>QFrame::NoFrame</enum>
+       <enum>QFrame::Shape::NoFrame</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+       <enum>QFrame::Shadow::Raised</enum>
       </property>
       <layout class="QHBoxLayout" name="horizontalLayout">
        <property name="leftMargin">
@@ -222,7 +236,7 @@
           <number>20</number>
          </property>
          <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -242,7 +256,7 @@
        <item>
         <widget class="QSlider" name="sliderPalOffset">
          <property name="orientation">
-          <enum>Qt::Horizontal</enum>
+          <enum>Qt::Orientation::Horizontal</enum>
          </property>
         </widget>
        </item>
@@ -258,10 +272,10 @@
        </sizepolicy>
       </property>
       <property name="frameShape">
-       <enum>QFrame::StyledPanel</enum>
+       <enum>QFrame::Shape::StyledPanel</enum>
       </property>
       <property name="frameShadow">
-       <enum>QFrame::Raised</enum>
+       <enum>QFrame::Shadow::Raised</enum>
       </property>
      </widget>
     </item>
@@ -405,6 +419,38 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>buttonPrev</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>prev()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>105</x>
+     <y>42</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>279</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonNext</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>next()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>147</x>
+     <y>42</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>399</x>
+     <y>279</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>Calculate()</slot>
@@ -414,5 +460,7 @@
   <slot>PaletteScaleSliderChanged(int)</slot>
   <slot>SaveImage()</slot>
   <slot>ZoomTop()</slot>
+  <slot>prev()</slot>
+  <slot>next()</slot>
  </slots>
 </ui>

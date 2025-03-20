@@ -4,6 +4,7 @@
 #include <QMainWindow>
 #include <QString>
 #include <map>
+#include <vector>
 #include "MandelbrotViewer.h"
 #include "mandelbrotcalc.h"
 #include "palette.h"
@@ -27,6 +28,8 @@ public slots:
     void Exit();
     void Calculate();
     void ZoomTop();
+    void prev();
+    void next();
     void PaletteChange( const QString &text );
     void PaletteOffsetSliderChanged(int);
     void PaletteScaleSliderChanged(int);
@@ -36,6 +39,15 @@ private:
     uchar * renderImage();
     void    drawImage();
     void    zoomIn( const QRectF & rect );
+    void    recenter( const QPointF & pos );
+
+    struct CalcPos
+    {
+        double      x1;
+        double      y1;
+        double      x2;
+        double      y2;
+    };
 
     Ui::MainWindow *            ui;
     MandelbrotCalc              m_calc;
@@ -49,6 +61,8 @@ private:
     bool                        m_ignore_pal_sig;
     bool                        m_ignore_off_sig;
     MandelbrotCalc::CalcParams  m_calc_params;
+    std::vector<CalcPos>        m_calc_history;
+    uint32_t                    m_calc_history_idx;
 
     friend class MandelbrotViewer;
 };
