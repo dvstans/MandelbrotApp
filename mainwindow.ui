@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>800</width>
-    <height>560</height>
+    <width>879</width>
+    <height>764</height>
    </rect>
   </property>
   <property name="windowTitle">
@@ -15,6 +15,21 @@
   </property>
   <widget class="QWidget" name="centralwidget">
    <layout class="QVBoxLayout" name="verticalLayout">
+    <property name="spacing">
+     <number>2</number>
+    </property>
+    <property name="leftMargin">
+     <number>2</number>
+    </property>
+    <property name="topMargin">
+     <number>2</number>
+    </property>
+    <property name="rightMargin">
+     <number>2</number>
+    </property>
+    <property name="bottomMargin">
+     <number>2</number>
+    </property>
     <item>
      <widget class="QFrame" name="frameToolbar">
       <property name="sizePolicy">
@@ -50,6 +65,9 @@
        </property>
        <item>
         <widget class="QToolButton" name="buttonCalc">
+         <property name="toolTip">
+          <string>Recalculate current position</string>
+         </property>
          <property name="text">
           <string>Calc</string>
          </property>
@@ -57,6 +75,9 @@
        </item>
        <item>
         <widget class="QToolButton" name="buttonTop">
+         <property name="toolTip">
+          <string>Go to top-level position</string>
+         </property>
          <property name="text">
           <string>Top</string>
          </property>
@@ -64,6 +85,9 @@
        </item>
        <item>
         <widget class="QToolButton" name="buttonPrev">
+         <property name="toolTip">
+          <string>Go to previous position</string>
+         </property>
          <property name="text">
           <string>Prev</string>
          </property>
@@ -71,6 +95,9 @@
        </item>
        <item>
         <widget class="QToolButton" name="buttonNext">
+         <property name="toolTip">
+          <string>Go to next position</string>
+         </property>
          <property name="text">
           <string>Next</string>
          </property>
@@ -86,10 +113,25 @@
        <item>
         <widget class="QLineEdit" name="lineEditResolution">
          <property name="sizePolicy">
-          <sizepolicy hsizetype="Minimum" vsizetype="Fixed">
+          <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
            <horstretch>0</horstretch>
            <verstretch>0</verstretch>
           </sizepolicy>
+         </property>
+         <property name="maximumSize">
+          <size>
+           <width>16777215</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="baseSize">
+          <size>
+           <width>0</width>
+           <height>0</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Primary axis resolution (pixels)</string>
          </property>
          <property name="text">
           <string>500</string>
@@ -111,6 +153,15 @@
            <verstretch>0</verstretch>
           </sizepolicy>
          </property>
+         <property name="maximumSize">
+          <size>
+           <width>100</width>
+           <height>16777215</height>
+          </size>
+         </property>
+         <property name="toolTip">
+          <string>Maximum iterations</string>
+         </property>
          <property name="text">
           <string>500</string>
          </property>
@@ -130,6 +181,9 @@
            <width>16777215</width>
            <height>16777214</height>
           </size>
+         </property>
+         <property name="toolTip">
+          <string>Compute thread count</string>
          </property>
          <property name="minimum">
           <number>1</number>
@@ -151,6 +205,9 @@
        </item>
        <item>
         <widget class="QSpinBox" name="spinBoxSuperSample">
+         <property name="toolTip">
+          <string>Super sampling factor</string>
+         </property>
          <property name="minimum">
           <number>1</number>
          </property>
@@ -160,10 +217,24 @@
         </widget>
        </item>
        <item>
-        <widget class="QComboBox" name="comboBoxPalette"/>
+        <widget class="QComboBox" name="comboBoxAspect">
+         <property name="toolTip">
+          <string>Zoom aspect ratio</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QComboBox" name="comboBoxPalette">
+         <property name="toolTip">
+          <string>Palette</string>
+         </property>
+        </widget>
        </item>
        <item>
         <widget class="QToolButton" name="buttonPalette">
+         <property name="toolTip">
+          <string>Edit palette</string>
+         </property>
          <property name="text">
           <string>Pal</string>
          </property>
@@ -178,6 +249,9 @@
        </item>
        <item>
         <widget class="QToolButton" name="buttonSave">
+         <property name="toolTip">
+          <string>Save current image</string>
+         </property>
          <property name="text">
           <string>Save</string>
          </property>
@@ -272,7 +346,7 @@
        </sizepolicy>
       </property>
       <property name="frameShape">
-       <enum>QFrame::Shape::StyledPanel</enum>
+       <enum>QFrame::Shape::NoFrame</enum>
       </property>
       <property name="frameShadow">
        <enum>QFrame::Shadow::Raised</enum>
@@ -286,7 +360,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>800</width>
+     <width>879</width>
      <height>21</height>
     </rect>
    </property>
@@ -451,6 +525,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>comboBoxAspect</sender>
+   <signal>currentIndexChanged(int)</signal>
+   <receiver>MainWindow</receiver>
+   <slot>aspectChange(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>589</x>
+     <y>34</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>439</x>
+     <y>381</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>Calculate()</slot>
@@ -462,5 +552,6 @@
   <slot>ZoomTop()</slot>
   <slot>prev()</slot>
   <slot>next()</slot>
+  <slot>aspectChange(int)</slot>
  </slots>
 </ui>

@@ -30,6 +30,7 @@ public slots:
     void ZoomTop();
     void prev();
     void next();
+    void aspectChange( int index );
     void PaletteChange( const QString &text );
     void PaletteOffsetSliderChanged(int);
     void PaletteScaleSliderChanged(int);
@@ -40,6 +41,13 @@ private:
     void    drawImage();
     void    zoomIn( const QRectF & rect );
     void    recenter( const QPointF & pos );
+
+    struct AspectRatio
+    {
+        QString         name;
+        uint8_t         major;
+        uint8_t         minor;
+    };
 
     struct CalcPos
     {
@@ -61,6 +69,7 @@ private:
     bool                        m_ignore_pal_sig;
     bool                        m_ignore_off_sig;
     MandelbrotCalc::CalcParams  m_calc_params;
+    std::vector<AspectRatio>    m_aspect_ratios;
     std::vector<CalcPos>        m_calc_history;
     uint32_t                    m_calc_history_idx;
 

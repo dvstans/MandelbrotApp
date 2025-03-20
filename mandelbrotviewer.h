@@ -20,13 +20,14 @@ public:
 
     QImage      getImage();
     void        setImage( const QImage & image );
+    void        setAspectRatio( uint8_t major, uint8_t minor );
 
 private:
     void mousePressEvent( QMouseEvent *event );
     void mouseMoveEvent( QMouseEvent *event );
     void mouseReleaseEvent( QMouseEvent *event );
     bool inBounds( const QPointF &a_point );
-    bool selecetRectIntersect( const QPointF &a_p1, const QPointF &a_p2 );
+    bool selecetRectIntersect( const QPointF &a_origin, const QPointF &a_cursor );
 
     QFrame &                    m_parent;
     IMandelbrotViewerObserver & m_observer;
@@ -38,6 +39,8 @@ private:
     QRectF                      m_sel_rect;
     int                         m_width;
     int                         m_height;
+    bool                        m_use_aspect_ratio;
+    double                      m_aspect_ratio;
 };
 
 #endif // MANDELBROTVIEWER_H

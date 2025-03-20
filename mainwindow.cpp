@@ -21,6 +21,8 @@ MainWindow::MainWindow(QWidget *parent):
     m_ignore_off_sig(false),
     m_calc_history_idx(0)
 {
+    setWindowTitle("Mandelbrot App");
+
     ui->setupUi(this);
     ui->menubar->hide();
     ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
@@ -30,13 +32,39 @@ MainWindow::MainWindow(QWidget *parent):
     ui->buttonNext->setDisabled(true);
     ui->buttonPrev->setDisabled(true);
 
-    setWindowTitle("Mandelbrot App");
+    // Because Qt doesn't allow widgets to be sized with points, must adjust fixed size line edits manually
+    // QLineEdit has hidden padding, thus string to set width had to be determined experimentally
+    // (i.e. Qt does not accomodate proper scaling on different display DPI)
+    QFontMetrics fm = ui->lineEditIterMax->fontMetrics();
+    ui->lineEditIterMax->setMinimumWidth( 10 );
+    ui->lineEditIterMax->setMaximumWidth( fm.horizontalAdvance("00000000") );
+    ui->lineEditResolution->setMinimumWidth( 10 );
+    ui->lineEditResolution->setMaximumWidth( fm.horizontalAdvance("0000000") );
+
+    // Setup aspect ratios
+    m_aspect_ratios = {
+        {"Any",0,0},
+        {"32:9",32,9},
+        {"21:9",21,9},
+        {"16:10",16,10},
+        {"16:9",16,9},
+        {"5:4",5,4},
+        {"5:3",5,3},
+        {"4:3",4,3},
+        {"3:2",3,2},
+        {"1:1",1,1}
+    };
+
+    for ( vector<AspectRatio>::const_iterator a = m_aspect_ratios.begin(); a != m_aspect_ratios.end(); a++ )
+    {
+        ui->comboBoxAspect->addItem(a->name);
+    }
 
     // Setup built-in palettes
 
     m_ignore_pal_sig = true;
 
-    m_palette_map["Default"] = {
+    m_palette_map["Rainbow"] = {
         {0xFFFF0000,10,Palette::CM_LINEAR},
         {0xFFFFFF00,10,Palette::CM_LINEAR},
         {0xFF00FF00,10,Palette::CM_LINEAR},
@@ -45,19 +73,37 @@ MainWindow::MainWindow(QWidget *parent):
         {0xFFFF00FF,10,Palette::CM_LINEAR}
     };
 
-    ui->comboBoxPalette->addItem("Default");
+    ui->comboBoxPalette->addItem("Rainbow");
 
-    m_palette_map["Stripes"] = {
+    m_palette_map["Mono"] = {
         {0xFF000000,1,Palette::CM_FLAT},
         {0xFFFFFFFF,1,Palette::CM_FLAT}
     };
 
-    ui->comboBoxPalette->addItem("Stripes");
+    ui->comboBoxPalette->addItem("Mono");
+
+    m_palette_map["RGB"] = {
+        {0xFFFF0000,10,Palette::CM_LINEAR},
+        {0xFF000000,10,Palette::CM_LINEAR},
+        {0xFF00FF00,10,Palette::CM_LINEAR},
+        {0xFF000000,10,Palette::CM_LINEAR},
+        {0xFF0000FF,10,Palette::CM_LINEAR},
+        {0xFF000000,10,Palette::CM_LINEAR}
+    };
+
+    ui->comboBoxPalette->addItem("RGB");
+
+    m_palette_map["Fire"] = {
+        {0xFFFF0000,20,Palette::CM_LINEAR},
+        {0xFFFFFF00,20,Palette::CM_LINEAR}
+    };
+
+    ui->comboBoxPalette->addItem("Fire");
 
     ui->comboBoxPalette->setCurrentIndex(0);
     m_ignore_pal_sig = false;
 
-    m_palette.setColors( m_palette_map["Default"] );
+    m_palette.setColors( m_palette_map["Rainbow"] );
 
     uint32_t ps = m_palette.getPaletteSize();
 
@@ -123,6 +169,15 @@ MainWindow::SaveImage()
         writer.write( image );
     }
 }
+
+
+void
+MainWindow::aspectChange( int a_index )
+{
+    cout << a_index << endl;
+    m_viewer->setAspectRatio( m_aspect_ratios[a_index].major, m_aspect_ratios[a_index].minor );
+}
+
 
 void
 MainWindow::PaletteChange( const QString &a_text )
