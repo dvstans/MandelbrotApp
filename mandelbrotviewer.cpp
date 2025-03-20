@@ -16,6 +16,7 @@ MandelbrotViewer::MandelbrotViewer( QFrame& a_parent, IMandelbrotViewerObserver 
     // Remove frame and margins
     setFrameShape( QFrame::NoFrame );
     setContentsMargins(0,0,0,0);
+    setBackgroundBrush(QBrush(Qt::black));
 
     QGraphicsScene *scene = new QGraphicsScene();
     QRectF rect(0,0,10,10);
