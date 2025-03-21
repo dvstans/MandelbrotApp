@@ -20,10 +20,12 @@ public:
         ColorMode   mode;
     };
 
+    typedef std::vector<ColorBand> Colors;
+
     Palette();
 
     void
-    setColors( const std::vector<ColorBand> & a_bands );
+    setColors( const Colors & a_bands );
 
     uint32_t
     getPaletteSize()

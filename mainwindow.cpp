@@ -123,6 +123,7 @@ MainWindow::MainWindow(QWidget *parent):
     // Set initial palette
     m_cur_palette_name = "Rainbow";
     m_palette.setColors( m_palette_map[m_cur_palette_name] );
+    m_palette_edit_dlg.setPalette(m_palette_map[m_cur_palette_name]);
 
     // Setup palette sliders
     m_ignore_off_sig = true;
@@ -196,7 +197,9 @@ MainWindow::paletteSelect( const QString &a_text )
     if ( m_ignore_pal_sig )
         return;
 
-    m_palette.setColors( m_palette_map[a_text.toStdString()] );
+    Palette::Colors & colors = m_palette_map[a_text.toStdString()];
+    m_palette.setColors( colors );
+    m_palette_edit_dlg.setPalette( colors );
 
     uint32_t ps = m_palette.getPaletteSize();
 
