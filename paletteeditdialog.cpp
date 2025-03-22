@@ -16,8 +16,7 @@ PaletteEditDialog::PaletteEditDialog(QWidget *parent):
     m_event_handler(*this),
     ui(new Ui::PaletteEditDialog),
     m_geometry_set(false),
-    m_cur_frame(0),
-    m_cur_index(-1)
+    m_cur_frame(0)
 {
     ui->setupUi(this);
 }
@@ -33,29 +32,29 @@ void
 PaletteEditDialog::setPalette( Palette::Colors & a_colors )
 {
     QLayout *layout = ui->frameControls->layout();
-    QLayoutItem *color_layout;
     size_t i;
     size_t color_count = layout->count() - 1; // -1 for vertical spacer at bottom
-    QWidget * frame;
 
-    cout << "cur col count " << color_count << " new: " << a_colors.size() << endl;
+    m_colors = a_colors;
+
+    //cout << "cur col count " << color_count << " new: " << a_colors.size() << endl;
 
     if ( a_colors.size() > color_count )
     {
         for ( i = color_count; i < a_colors.size(); i++ )
         {
-            insertColorControls(i);
+            insertColorControls( i );
         }
     }
     else if ( color_count > a_colors.size() )
     {
+        QLayoutItem *color_layout;
+        QWidget * frame;
+
         for ( i = a_colors.size(); i < color_count; i++ )
         {
             color_layout = layout->itemAt(a_colors.size());
             frame = color_layout->widget();
-
-            cout << i << " " << color_layout << endl;
-
             layout->removeItem( color_layout );
             delete frame;
         }
@@ -64,16 +63,12 @@ PaletteEditDialog::setPalette( Palette::Colors & a_colors )
     Palette::Colors::iterator c = a_colors.begin();
     for ( i = 0; i < a_colors.size(); i++, c++ )
     {
-        setColorControl(i,c->color,c->width,c->mode);
+        setColor( i, *c );
     }
 
-    if ( m_cur_index >= (int)a_colors.size() )
-    {
-        m_cur_frame = 0;
-        m_cur_index = -1;
-    }
+    //cout << "cc " << m_colors.size() << endl;
 
-    setFocus(0);
+    setFocus( 0 );
 }
 
 
@@ -93,6 +88,68 @@ PaletteEditDialog::hideWithPos()
     QDialog::hide();
 }
 
+void PaletteEditDialog::moveColorUp()
+{
+    if ( m_colors.size() > 1 )
+    {
+        int index = getFocusIndex();
+        if ( index > 0 )
+        {
+            swapColors( index, index - 1 );
+        }
+    }
+}
+
+void PaletteEditDialog::moveColorDown()
+{
+    if ( m_colors.size() > 1 )
+    {
+        int index = getFocusIndex();
+        if ( index < (int)m_colors.size() - 1 )
+        {
+            swapColors( index, index + 1 );
+        }
+    }
+}
+
+
+void PaletteEditDialog::insertColor()
+{
+    int index = getFocusIndex();
+    insertColorControls( index + 1 );
+
+    Palette::ColorBand band {
+        0,
+        10,
+        Palette::CM_LINEAR
+    };
+
+    m_colors.insert( m_colors.begin() + index + 1, band );
+    setColor( index + 1, band );
+
+    setFocus( index + 1 );
+}
+
+
+void PaletteEditDialog::deleteColor()
+{
+    if ( m_colors.size() > 1 )
+    {
+        int index = getFocusIndex();
+
+        QLayout *layout = ui->frameControls->layout();
+        QLayoutItem *color_layout = layout->itemAt(index);
+        QWidget * frame = color_layout->widget();
+
+        layout->removeItem( color_layout );
+        delete frame;
+
+        m_colors.erase( m_colors.begin() + index );
+        setFocus( index < (int)m_colors.size()?index:index-1 );
+    }
+}
+
+
 void
 PaletteEditDialog::closeEvent( QCloseEvent *a_event )
 {
@@ -109,63 +166,71 @@ PaletteEditDialog::insertColorControls( int a_index )
     frame->setStyleSheet("QFrame { border: 1px solid transparent}");
     frame->installEventFilter( &m_event_handler );
 
-    cout << "new frame: " << frame << endl;
-
     QHBoxLayout *layout = new QHBoxLayout();
 
     QLabel *labelColor = new QLabel("      ",frame);
-    labelColor->setStyleSheet("QLabel {background: white}");
+    labelColor->setStyleSheet("QLabel {background: black}");
     layout->addWidget( labelColor ); // Color swatch
-    layout->addWidget( new QLineEdit(frame)); // Color value in hex
-    layout->addWidget( new QLineEdit(frame)); // Width input
+
+    QLineEdit * edit = new QLineEdit(frame);
+    edit->setText("000000");
+    layout->addWidget( edit ); // Color value in hex
+    edit->installEventFilter( &m_event_handler );
+
+    edit = new QLineEdit(frame);
+    edit->setText(QString("%1").arg(10));
+    layout->addWidget( edit ); // Width input
+    edit->installEventFilter( &m_event_handler );
 
     // TODO style is not being applied to combobox
-    QComboBox *combo = new QComboBox(frame);
     //combo->setStyle(QStyleFactory::create("Fusion"));
+    QComboBox *combo = new QComboBox(frame);
     combo->addItem( "Flat" );
     combo->addItem( "Linear" );
+    combo->setCurrentIndex(1);
     layout->addWidget( combo ); // Mode selection
+    combo->installEventFilter( &m_event_handler );
 
     frame->setLayout(layout);
 
     QBoxLayout* box = static_cast<QBoxLayout*>(ui->frameControls->layout());
     box->insertWidget( a_index, frame );
+
 }
 
 
 void
-PaletteEditDialog::setColorControl( int a_index, uint32_t a_color, uint16_t a_width, Palette::ColorMode a_mode )
+PaletteEditDialog::setColor( int a_index, const Palette::ColorBand & a_color )
 {
     QFrame *frame = static_cast<QFrame*>(ui->frameControls->layout()->itemAt( a_index )->widget());
+
     QLabel *label = static_cast<QLabel*>(frame->layout()->itemAt(0)->widget()); // Color swatch
-    QString color_hex = QString("%1").arg(a_color & 0xFFFFFF,6,16,QChar('0'));
+    QString color_hex = QString("%1").arg(a_color.color & 0xFFFFFF,6,16,QChar('0'));
     label->setStyleSheet(QString("QLabel {background: #%1}").arg(color_hex));
+
     QLineEdit *edit = static_cast<QLineEdit*>(frame->layout()->itemAt(1)->widget()); // Color input
     edit->setText( color_hex );
+
     edit = static_cast<QLineEdit*>(frame->layout()->itemAt(2)->widget()); // Width input
-    edit->setText( QString("%1").arg( a_width ));
+    edit->setText( QString("%1").arg( a_color.width ));
+
     QComboBox *combo = static_cast<QComboBox*>(frame->layout()->itemAt(3)->widget()); // Mode combobox
-    combo->setCurrentIndex((int)a_mode);
+    combo->setCurrentIndex((int)a_color.mode);
 }
+
 
 void
-PaletteEditDialog::setFocus( int a_index )
+PaletteEditDialog::swapColors( int a_index1, int a_index2 )
 {
-    QFrame * frame = static_cast<QFrame*>(ui->frameControls->layout()->itemAt( a_index )->widget());
+    QVBoxLayout * layout = static_cast<QVBoxLayout*>(ui->frameControls->layout());
+    QLayoutItem * item = layout->itemAt(a_index1);
 
-    if ( frame == m_cur_frame )
-        return;
+    layout->removeItem( item );
+    layout->insertItem( a_index2, item );
 
-    if ( m_cur_frame )
-    {
-        //frame = static_cast<QFrame*>(ui->frameControls->layout()->itemAt( m_cur_focus )->widget());
-        m_cur_frame->setStyleSheet("QFrame {border: 1px solid transparent}");
-    }
-
-    m_cur_frame = static_cast<QFrame*>(ui->frameControls->layout()->itemAt( a_index )->widget());
-    m_cur_frame->setStyleSheet("QFrame {border: 1px solid #b0b000}");
-    m_cur_index = a_index;
+    iter_swap(m_colors.begin() + a_index1, m_colors.begin() + a_index2 );
 }
+
 
 void
 PaletteEditDialog::setFocus( QFrame * a_frame )
@@ -180,27 +245,36 @@ PaletteEditDialog::setFocus( QFrame * a_frame )
 
     m_cur_frame = a_frame;
     m_cur_frame->setStyleSheet("QFrame {border: 1px solid #b0b000}");
-    //m_cur_index = a_index; TODO
 }
+
+void
+PaletteEditDialog::setFocus( int a_index )
+{
+    setFocus(static_cast<QFrame*>(ui->frameControls->layout()->itemAt(a_index)->widget()));
+}
+
+int
+PaletteEditDialog::getFocusIndex()
+{
+    return ui->frameControls->layout()->indexOf( m_cur_frame );
+}
+
 
 bool
 PaletteEditDialog::EventHandler::eventFilter( QObject * a_object, QEvent *a_event )
 {
-    if ( a_event->type() == QEvent::MouseButtonPress ) {
-        QMouseEvent *mouseEvent = static_cast<QMouseEvent *>(a_event);
+    if ( a_event->type() == QEvent::MouseButtonPress || a_event->type() == QEvent::FocusIn )
+    {
+        QFrame * frame = dynamic_cast<QFrame*>(a_object);
+        if ( !frame && a_object )
+        {
+            frame = static_cast<QFrame*>( a_object->parent() );
+        }
 
-        cout << "mouse " << a_object << endl;
-
-        QFrame * frame = static_cast<QFrame*>(a_object);
         if ( frame )
+        {
             m_palette_edit_dlg.setFocus( frame );
-
-        /*if (keyEvent->key() == Qt::Key_Tab) {
-            // Special tab handling
-            return true;
-        } else
-            return false;
-        */
+        }
     }
 
     return false;

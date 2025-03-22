@@ -23,6 +23,10 @@ public:
 public slots:
     void showWithPos();
     void hideWithPos();
+    void moveColorUp();
+    void moveColorDown();
+    void insertColor();
+    void deleteColor();
 
 private:
     class EventHandler : public QObject
@@ -40,16 +44,19 @@ private:
 
     void    closeEvent( QCloseEvent *event );
     void    insertColorControls( int index );
-    void    setColorControl( int index, uint32_t color, uint16_t width, Palette::ColorMode mode );
-    void    setFocus( int index );
+    QFrame* getColorControl( int index );
+    void    setColor( int index, const Palette::ColorBand & band );
+    void    swapColors( int index1, int index2 );
     void    setFocus( QFrame * a_frame );
+    void    setFocus( int index );
+    int     getFocusIndex();
 
+    Palette::Colors         m_colors;
     EventHandler            m_event_handler;
     Ui::PaletteEditDialog*  ui;
     QRect                   m_geometry;
     bool                    m_geometry_set;
     QFrame *                m_cur_frame;
-    int                     m_cur_index;
 
     friend class EventHandler;
 };
