@@ -4,7 +4,7 @@
 #include<cstdint>
 #include<vector>
 
-class Palette
+class PaletteGenerator
 {
 public:
     enum ColorMode : uint8_t
@@ -20,29 +20,31 @@ public:
         ColorMode   mode;
     };
 
-    typedef std::vector<ColorBand> Colors;
+    typedef std::vector<ColorBand>  ColorBands;
+    typedef std::vector<uint32_t>   Palette;
 
-    Palette();
+    PaletteGenerator();
 
     void
-    setColors( const Colors & a_bands );
+    setPaletteColorBands( const ColorBands & a_bands );
 
-    uint32_t
+    const Palette &
+    renderPalette( uint8_t scale = 1 );
+
+    size_t
     getPaletteSize()
     {
         return m_palette_size*m_scale;
     }
 
-    const std::vector<uint32_t> &
-    render( uint8_t scale = 1 );
 
 private:
-    void generatePalette();
+    void        generatePalette();
 
-    std::vector<ColorBand>  m_bands;
-    std::vector<uint32_t>   m_palette;
-    uint32_t                m_palette_size;
-    uint8_t                 m_scale;
+    ColorBands  m_bands;
+    Palette     m_palette;
+    uint32_t    m_palette_size;
+    uint8_t     m_scale;
 };
 
 #endif // PALETTE_H

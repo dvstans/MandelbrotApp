@@ -3,20 +3,19 @@
 
 using namespace std;
 
-Palette::Palette():
+PaletteGenerator::PaletteGenerator():
     m_palette_size(0),
     m_scale(1)
-{
-}
+{}
 
 void
-Palette::setColors( const vector<ColorBand> & a_bands )
+PaletteGenerator::setPaletteColorBands( const ColorBands & a_bands )
 {
     m_bands = a_bands;
     m_palette.resize(0);
     m_palette_size = 0;
 
-    for ( vector<ColorBand>::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
+    for ( ColorBands::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
     {
         m_palette_size += cb->width;
     }
@@ -24,8 +23,8 @@ Palette::setColors( const vector<ColorBand> & a_bands )
     generatePalette();
 }
 
-const std::vector<uint32_t> &
-Palette::render( uint8_t a_scale )
+const PaletteGenerator::Palette &
+PaletteGenerator::renderPalette( uint8_t a_scale )
 {
     if ( m_palette.size() == 0 || a_scale != m_scale )
     {
@@ -38,11 +37,11 @@ Palette::render( uint8_t a_scale )
 }
 
 void
-Palette::generatePalette()
+PaletteGenerator::generatePalette()
 {
     m_palette.resize(m_palette_size*m_scale);
 
-    vector<ColorBand>::const_iterator cb2;
+    ColorBands::const_iterator cb2;
     uint32_t * color = m_palette.data();
     uint32_t i, w;
     uint8_t r, g, b;
@@ -50,7 +49,7 @@ Palette::generatePalette()
     uint8_t r2, g2, b2;
     double  dr,dg,db;
 
-    for ( vector<ColorBand>::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
+    for ( ColorBands::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
     {
         w = cb->width * m_scale;
 
@@ -85,7 +84,7 @@ Palette::generatePalette()
                 *color = 0xFF000000 | r << 16 | g << 8 | b;
             }
         }
-        else // Flat
+        else // CM_FLAT
         {
             for ( i = 0; i < w; i++, color++ )
             {

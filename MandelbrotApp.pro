@@ -21,7 +21,8 @@ HEADERS += \
     mandelbrotcalc.h \
     mandelbrotviewer.h \
     palette.h \
-    paletteeditdialog.h
+    paletteeditdialog.h \
+    paletteinfo.h
 
 FORMS += \
     mainwindow.ui \

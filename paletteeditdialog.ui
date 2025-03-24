@@ -6,8 +6,8 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>219</width>
-    <height>464</height>
+    <width>266</width>
+    <height>543</height>
    </rect>
   </property>
   <property name="maximumSize">
@@ -19,9 +19,9 @@
   <property name="windowTitle">
    <string>Edit Palette</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout_2">
+  <layout class="QVBoxLayout" name="verticalLayout">
    <property name="spacing">
-    <number>2</number>
+    <number>0</number>
    </property>
    <property name="leftMargin">
     <number>0</number>
@@ -36,18 +36,89 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QFrame" name="frameControls">
+    <widget class="QScrollArea" name="scrollArea">
+     <property name="frameShape">
+      <enum>QFrame::Shape::NoFrame</enum>
+     </property>
+     <property name="widgetResizable">
+      <bool>true</bool>
+     </property>
+     <widget class="QWidget" name="scrollAreaWidgetContents">
+      <property name="geometry">
+       <rect>
+        <x>0</x>
+        <y>0</y>
+        <width>266</width>
+        <height>444</height>
+       </rect>
+      </property>
+      <layout class="QVBoxLayout" name="verticalLayout_2">
+       <property name="spacing">
+        <number>0</number>
+       </property>
+       <property name="leftMargin">
+        <number>4</number>
+       </property>
+       <property name="topMargin">
+        <number>0</number>
+       </property>
+       <property name="rightMargin">
+        <number>4</number>
+       </property>
+       <property name="bottomMargin">
+        <number>0</number>
+       </property>
+       <item>
+        <widget class="QFrame" name="frameControls">
+         <property name="frameShape">
+          <enum>QFrame::Shape::NoFrame</enum>
+         </property>
+         <property name="frameShadow">
+          <enum>QFrame::Shadow::Raised</enum>
+         </property>
+         <layout class="QVBoxLayout" name="verticalLayout_3">
+          <property name="spacing">
+           <number>2</number>
+          </property>
+          <property name="leftMargin">
+           <number>0</number>
+          </property>
+          <property name="topMargin">
+           <number>0</number>
+          </property>
+          <property name="rightMargin">
+           <number>0</number>
+          </property>
+          <property name="bottomMargin">
+           <number>0</number>
+          </property>
+          <item>
+           <spacer name="verticalSpacer">
+            <property name="orientation">
+             <enum>Qt::Orientation::Vertical</enum>
+            </property>
+            <property name="sizeHint" stdset="0">
+             <size>
+              <width>20</width>
+              <height>441</height>
+             </size>
+            </property>
+           </spacer>
+          </item>
+         </layout>
+        </widget>
+       </item>
+      </layout>
+     </widget>
+    </widget>
+   </item>
+   <item>
+    <widget class="QFrame" name="frameColorControls">
      <property name="sizePolicy">
-      <sizepolicy hsizetype="Preferred" vsizetype="Expanding">
+      <sizepolicy hsizetype="Preferred" vsizetype="Fixed">
        <horstretch>0</horstretch>
        <verstretch>0</verstretch>
       </sizepolicy>
-     </property>
-     <property name="maximumSize">
-      <size>
-       <width>16777215</width>
-       <height>16777215</height>
-      </size>
      </property>
      <property name="frameShape">
       <enum>QFrame::Shape::NoFrame</enum>
@@ -55,34 +126,78 @@
      <property name="frameShadow">
       <enum>QFrame::Shadow::Raised</enum>
      </property>
-     <layout class="QVBoxLayout" name="verticalLayout">
-      <property name="spacing">
-       <number>2</number>
-      </property>
+     <layout class="QFormLayout" name="formLayout">
       <property name="leftMargin">
-       <number>4</number>
+       <number>6</number>
       </property>
       <property name="topMargin">
        <number>4</number>
       </property>
       <property name="rightMargin">
-       <number>4</number>
+       <number>6</number>
       </property>
       <property name="bottomMargin">
        <number>4</number>
       </property>
-      <item>
-       <spacer name="verticalSpacer">
+      <item row="0" column="0">
+       <widget class="QLabel" name="label">
+        <property name="text">
+         <string>R</string>
+        </property>
+       </widget>
+      </item>
+      <item row="0" column="1">
+       <widget class="QSlider" name="sliderRed">
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>255</number>
+        </property>
         <property name="orientation">
-         <enum>Qt::Orientation::Vertical</enum>
+         <enum>Qt::Orientation::Horizontal</enum>
         </property>
-        <property name="sizeHint" stdset="0">
-         <size>
-          <width>20</width>
-          <height>40</height>
-         </size>
+       </widget>
+      </item>
+      <item row="1" column="0">
+       <widget class="QLabel" name="label_2">
+        <property name="text">
+         <string>G</string>
         </property>
-       </spacer>
+       </widget>
+      </item>
+      <item row="1" column="1">
+       <widget class="QSlider" name="sliderGreen">
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>255</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="0">
+       <widget class="QLabel" name="label_3">
+        <property name="text">
+         <string>B</string>
+        </property>
+       </widget>
+      </item>
+      <item row="2" column="1">
+       <widget class="QSlider" name="sliderBlue">
+        <property name="minimum">
+         <number>1</number>
+        </property>
+        <property name="maximum">
+         <number>255</number>
+        </property>
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+       </widget>
       </item>
      </layout>
     </widget>
@@ -90,7 +205,7 @@
    <item>
     <widget class="QFrame" name="frame">
      <property name="frameShape">
-      <enum>QFrame::Shape::StyledPanel</enum>
+      <enum>QFrame::Shape::NoFrame</enum>
      </property>
      <property name="frameShadow">
       <enum>QFrame::Shadow::Raised</enum>
@@ -116,29 +231,53 @@
         <property name="enabled">
          <bool>true</bool>
         </property>
+        <property name="toolTip">
+         <string>Move current color up</string>
+        </property>
         <property name="text">
          <string>Up</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::GoUp"/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QToolButton" name="buttonMoveDown">
+        <property name="toolTip">
+         <string>Move current color down</string>
+        </property>
         <property name="text">
          <string>Down</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::GoDown"/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QToolButton" name="buttonInsert">
+        <property name="toolTip">
+         <string>Inser new color</string>
+        </property>
         <property name="text">
          <string>Ins</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::ListAdd"/>
         </property>
        </widget>
       </item>
       <item>
        <widget class="QToolButton" name="buttonDelete">
+        <property name="toolTip">
+         <string>Delete current color</string>
+        </property>
         <property name="text">
          <string>Del</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::ListRemove"/>
         </property>
        </widget>
       </item>
@@ -156,9 +295,51 @@
        </spacer>
       </item>
       <item>
-       <widget class="QToolButton" name="buttonClose">
+       <widget class="QToolButton" name="buttonNewPal">
+        <property name="toolTip">
+         <string>Create new palette</string>
+        </property>
         <property name="text">
-         <string>Close</string>
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::DocumentNew"/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="buttonDuplicatePal">
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::EditCopy"/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="buttonSavePal">
+        <property name="toolTip">
+         <string>Save current palette</string>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::DocumentSave"/>
+        </property>
+       </widget>
+      </item>
+      <item>
+       <widget class="QToolButton" name="buttonDeletePal">
+        <property name="toolTip">
+         <string>Delete current palette</string>
+        </property>
+        <property name="text">
+         <string>...</string>
+        </property>
+        <property name="icon">
+         <iconset theme="QIcon::ThemeIcon::EditDelete"/>
         </property>
        </widget>
       </item>
@@ -169,22 +350,6 @@
  </widget>
  <resources/>
  <connections>
-  <connection>
-   <sender>buttonClose</sender>
-   <signal>clicked()</signal>
-   <receiver>PaletteEditDialog</receiver>
-   <slot>hideWithPos()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>192</x>
-     <y>447</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>109</x>
-     <y>231</y>
-    </hint>
-   </hints>
-  </connection>
   <connection>
    <sender>buttonDelete</sender>
    <signal>clicked()</signal>
@@ -249,6 +414,118 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>sliderBlue</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>updateBlueValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>139</x>
+     <y>499</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sliderGreen</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>updateGreenValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>139</x>
+     <y>477</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>sliderRed</sender>
+   <signal>valueChanged(int)</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>updateRedValue(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>139</x>
+     <y>455</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonDeletePal</sender>
+   <signal>clicked()</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>paletteDelete()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>249</x>
+     <y>527</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonSavePal</sender>
+   <signal>clicked()</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>paletteSave()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>223</x>
+     <y>527</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonNewPal</sender>
+   <signal>clicked()</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>paletteNew()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>197</x>
+     <y>527</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
+  <connection>
+   <sender>buttonDuplicatePal</sender>
+   <signal>clicked()</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>paletteDuplicate()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>197</x>
+     <y>527</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>132</x>
+     <y>271</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>hideWithPos()</slot>
@@ -256,5 +533,12 @@
   <slot>moveColorDown()</slot>
   <slot>insertColor()</slot>
   <slot>deleteColor()</slot>
+  <slot>updateRedValue(int)</slot>
+  <slot>updateGreenValue(int)</slot>
+  <slot>updateBlueValue(int)</slot>
+  <slot>paletteSave()</slot>
+  <slot>paletteDelete()</slot>
+  <slot>paletteNew()</slot>
+  <slot>paletteDuplicate()</slot>
  </slots>
 </ui>

@@ -7,7 +7,7 @@
 #include <vector>
 #include "MandelbrotViewer.h"
 #include "mandelbrotcalc.h"
-#include "palette.h"
+#include "paletteinfo.h"
 #include "paletteeditdialog.h"
 
 QT_BEGIN_NAMESPACE
@@ -17,7 +17,7 @@ class MainWindow;
 QT_END_NAMESPACE
 
 
-class MainWindow : public QMainWindow, IMandelbrotViewerObserver
+class MainWindow : public QMainWindow, IMandelbrotViewerObserver, IPaletteEditObserver
 {
     Q_OBJECT
 
@@ -26,7 +26,7 @@ public:
     ~MainWindow();
 
 public slots:
-    void Exit();
+    void closeEvent( QCloseEvent *event );
     void Calculate();
     void ZoomTop();
     void prev();
@@ -39,10 +39,17 @@ public slots:
     void SaveImage();
 
 private:
+    typedef std::map<std::string,PaletteInfo> PaletteMap_t;
+
     uchar * renderImage();
     void    drawImage();
     void    zoomIn( const QRectF & rect );
     void    recenter( const QPointF & pos );
+    void    paletteChanged();   // IPaletteEditObserver
+    void    paletteNew();
+    void    paletteDuplicate( const PaletteInfo & palette_info );
+    void    paletteSave( const PaletteInfo & palette_info );      // IPaletteEditObserver
+    void    paletteDelete( const PaletteInfo & palette_info );    // IPaletteEditObserver
 
     struct AspectRatio
     {
@@ -63,11 +70,12 @@ private:
     MandelbrotCalc              m_calc;
     MandelbrotViewer *          m_viewer;
     PaletteEditDialog           m_palette_edit_dlg;
-    Palette                     m_palette;
+    bool                        m_palette_dlg_edit_init;
+    PaletteGenerator            m_palette_gen;
     MandelbrotCalc::CalcResult  m_calc_result;
     uint8_t                     m_calc_ss;
-    std::map<std::string,std::vector<Palette::ColorBand>>  m_palette_map;
-    std::string                 m_cur_palette_name;
+    PaletteMap_t                m_palette_map;
+    //std::string                 m_cur_palette_name;
     uint16_t                    m_palette_scale;
     uint32_t                    m_palette_offset;
     bool                        m_ignore_pal_sig;

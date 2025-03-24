@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>879</width>
+    <width>881</width>
     <height>764</height>
    </rect>
   </property>
@@ -81,6 +81,9 @@
          <property name="text">
           <string>Top</string>
          </property>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::GoHome"/>
+         </property>
         </widget>
        </item>
        <item>
@@ -91,6 +94,9 @@
          <property name="text">
           <string>Prev</string>
          </property>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::GoPrevious"/>
+         </property>
         </widget>
        </item>
        <item>
@@ -100,6 +106,9 @@
          </property>
          <property name="text">
           <string>Next</string>
+         </property>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::GoNext"/>
          </property>
         </widget>
        </item>
@@ -134,7 +143,7 @@
           <string>Primary axis resolution (pixels)</string>
          </property>
          <property name="text">
-          <string>500</string>
+          <string>1000</string>
          </property>
         </widget>
        </item>
@@ -217,43 +226,43 @@
         </widget>
        </item>
        <item>
+        <widget class="QLabel" name="label_7">
+         <property name="text">
+          <string>AR:</string>
+         </property>
+        </widget>
+       </item>
+       <item>
         <widget class="QComboBox" name="comboBoxAspect">
          <property name="toolTip">
-          <string>Zoom aspect ratio</string>
+          <string>Select zoom aspect ratio</string>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QLabel" name="label_8">
+         <property name="text">
+          <string>PAL:</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QComboBox" name="comboBoxPalette">
          <property name="toolTip">
-          <string>Palette</string>
+          <string>Select color palette</string>
          </property>
         </widget>
        </item>
        <item>
         <widget class="QToolButton" name="buttonPaletteEdit">
          <property name="toolTip">
-          <string>Edit palette</string>
+          <string>Edit current palette</string>
          </property>
          <property name="text">
-          <string>Pal</string>
+          <string>Edit</string>
          </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="buttonLoad">
-         <property name="text">
-          <string>Load</string>
-         </property>
-        </widget>
-       </item>
-       <item>
-        <widget class="QToolButton" name="buttonSave">
-         <property name="toolTip">
-          <string>Save current image</string>
-         </property>
-         <property name="text">
-          <string>Save</string>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::DocumentProperties"/>
          </property>
         </widget>
        </item>
@@ -269,6 +278,29 @@
           </size>
          </property>
         </spacer>
+       </item>
+       <item>
+        <widget class="QToolButton" name="buttonLoad">
+         <property name="text">
+          <string>Load</string>
+         </property>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::DocumentOpen"/>
+         </property>
+        </widget>
+       </item>
+       <item>
+        <widget class="QToolButton" name="buttonSave">
+         <property name="toolTip">
+          <string>Save current image</string>
+         </property>
+         <property name="text">
+          <string>Save</string>
+         </property>
+         <property name="icon">
+          <iconset theme="QIcon::ThemeIcon::DocumentSave"/>
+         </property>
+        </widget>
        </item>
       </layout>
      </widget>
@@ -360,7 +392,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>879</width>
+     <width>881</width>
      <height>21</height>
     </rect>
    </property>
