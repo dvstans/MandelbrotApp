@@ -2,6 +2,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QSettings>
 #include <QString>
 #include <map>
 #include <vector>
@@ -48,8 +49,12 @@ private:
     void    paletteChanged();   // IPaletteEditObserver
     void    paletteNew();
     void    paletteDuplicate( const PaletteInfo & palette_info );
-    void    paletteSave( const PaletteInfo & palette_info );      // IPaletteEditObserver
+    void    paletteSave( PaletteInfo & palette_info );      // IPaletteEditObserver
     void    paletteDelete( const PaletteInfo & palette_info );    // IPaletteEditObserver
+    void    settingsPaletteLoadAll();
+    void    settingsPaletteSave( PaletteInfo & palette_info );
+    void    settingsPaletteDelete( const std::string & palette_name );
+    QString inputPaletteName( const QString & a_title );
 
     struct AspectRatio
     {
@@ -67,6 +72,7 @@ private:
     };
 
     Ui::MainWindow *            ui;
+    QSettings                   m_settings;
     MandelbrotCalc              m_calc;
     MandelbrotViewer *          m_viewer;
     PaletteEditDialog           m_palette_edit_dlg;

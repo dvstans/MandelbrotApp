@@ -9,6 +9,9 @@ int main(int argc, char *argv[])
 {
     std::cout << "starting app" << std::endl;
 
+    QCoreApplication::setOrganizationName("DVStansberry");
+    QCoreApplication::setApplicationName("MandelbrotApp");
+
     QApplication a(argc, argv);
 
     // Set application style

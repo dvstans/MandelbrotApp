@@ -7,6 +7,7 @@
 #include <QImageWriter>
 #include <QMessageBox>
 #include <QInputDialog>
+#include <QStringList>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -17,6 +18,7 @@ using namespace std;
 MainWindow::MainWindow(QWidget *parent):
     QMainWindow(parent),
     ui(new Ui::MainWindow),
+    m_settings(QSettings::UserScope),
     m_calc(true,8),
     m_palette_edit_dlg(this,*this),
     m_palette_dlg_edit_init(true),
@@ -129,6 +131,9 @@ MainWindow::MainWindow(QWidget *parent):
 
     ui->comboBoxPalette->setCurrentIndex(0);
     m_ignore_pal_sig = false;
+
+    // Load custom palettes from settings
+    settingsPaletteLoadAll();
 
     // Set initial palette
     m_palette_gen.setPaletteColorBands( m_palette_map["Default"].color_bands );
@@ -277,8 +282,6 @@ MainWindow::PaletteOffsetSliderChanged( int a_offset )
         return;
     }
 
-    //cout << "off " << a_offset << endl;
-
     m_palette_offset = a_offset;
 
     if ( m_calc_result.img_data )
@@ -345,21 +348,6 @@ MainWindow::Calculate()
        .arg(m_calc_ss)
        .arg(m_calc_result.time_ms));
 
-    /*
-    ui->labelImageInfo->setText(
-        QString("(%1,%2)->(%3,%4), iter: %5, w: %6, h: %7, tc: %8, ss: %9, msec: %10")
-            .arg(m_calc_result.x1)
-            .arg(m_calc_result.y1)
-            .arg(m_calc_result.x2)
-            .arg(m_calc_result.y2)
-            .arg(m_calc_result.iter_mx)
-            .arg(m_calc_result.img_width)
-            .arg(m_calc_result.img_height)
-            .arg(m_calc_result.th_cnt)
-            .arg(m_calc_ss)
-            .arg(m_calc_result.time_ms)
-    );
-*/
     ui->buttonCalc->setDisabled(false);
     ui->buttonSave->setDisabled(false);
 }
@@ -399,6 +387,13 @@ MainWindow::ZoomTop()
     m_calc_history_idx = 0;
 }
 
+/**
+ * @brief Callback from palette edit dialog to notify main window that palette has been altered
+ *
+ * This method is called by the PaletteEditDialog whenever the user changes the color content
+ * of the currently selected palette. The main window will redraw the current image, and, if
+ * the palette is not built-in, it will update the stored palette map and marked it as changed.
+ */
 void
 MainWindow::paletteChanged()
 {
@@ -418,27 +413,11 @@ void
 MainWindow::paletteNew()
 {
     // Get palette name
-    bool ok;
-    QString text = QInputDialog::getText( this, "Mandelbrot App - New Palette",
-                        "Palette name (max 20 char):", QLineEdit::Normal, "name", &ok );
-    if ( ok )
+    QString input = inputPaletteName( "New Palette" );
+
+    if ( input.length() )
     {
-        cout << "name" << text.toStdString() << endl;
-        if ( text.length() > 20 )
-        {
-            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name too long.", QMessageBox::Ok, this );
-            mb.exec();
-            return;
-        }
-
-        string name = text.toStdString();
-
-        if ( m_palette_map.find( name ) != m_palette_map.end() )
-        {
-            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name already exists.", QMessageBox::Ok, this );
-            mb.exec();
-            return;
-        }
+        string name = input.toStdString();
 
         m_palette_map[name] =
             {
@@ -452,7 +431,7 @@ MainWindow::paletteNew()
             };
 
         m_ignore_pal_sig = true;
-        ui->comboBoxPalette->addItem( text );
+        ui->comboBoxPalette->addItem( input );
         ui->comboBoxPalette->setCurrentIndex(ui->comboBoxPalette->count()-1);
         m_ignore_pal_sig = false;
 
@@ -466,27 +445,11 @@ void
 MainWindow::paletteDuplicate( const PaletteInfo & a_pal_info )
 {
     // Get palette name
-    bool ok;
-    QString text = QInputDialog::getText( this, "Mandelbrot App - Duplicate Palette",
-                                         "Palette name (max 20 char):", QLineEdit::Normal, "name", &ok );
-    if ( ok )
+    QString input = inputPaletteName( "Duplicate Palette" );
+
+    if ( input.length() )
     {
-        cout << "name" << text.toStdString() << endl;
-        if ( text.length() > 20 )
-        {
-            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name too long.", QMessageBox::Ok, this );
-            mb.exec();
-            return;
-        }
-
-        string name = text.toStdString();
-
-        if ( m_palette_map.find( name ) != m_palette_map.end() )
-        {
-            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name already exists.", QMessageBox::Ok, this );
-            mb.exec();
-            return;
-        }
+        string name = input.toStdString();
 
         PaletteInfo info = {
             name,
@@ -498,7 +461,7 @@ MainWindow::paletteDuplicate( const PaletteInfo & a_pal_info )
         m_palette_map[name] = info;
 
         m_ignore_pal_sig = true;
-        ui->comboBoxPalette->addItem( text );
+        ui->comboBoxPalette->addItem( input );
         ui->comboBoxPalette->setCurrentIndex(ui->comboBoxPalette->count()-1);
         m_ignore_pal_sig = false;
 
@@ -507,10 +470,65 @@ MainWindow::paletteDuplicate( const PaletteInfo & a_pal_info )
     }
 }
 
+QString
+MainWindow::inputPaletteName( const QString & a_title )
+{
+    bool ok;
+    QString input = "name";
+
+    while( 1 )
+    {
+        input = QInputDialog::getText( this, QString("Mandelbrot App - %1").arg(a_title),
+                        "Name (max 20 char, alphanumeric only):", QLineEdit::Normal, input, &ok );
+        if ( !ok )
+            break;
+
+        // Enforce max length
+        if ( input.length() > 20 )
+        {
+            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name too long.", QMessageBox::Ok, this );
+            mb.exec();
+            continue;
+        }
+
+        // Enforce character set
+        // TODO convert to regular expression
+        for ( QString::ConstIterator c = input.cbegin(); c != input.cend(); c++ )
+        {
+            if ( !isalnum( c->toLatin1() ))
+            {
+                QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name contains invalid characters.", QMessageBox::Ok, this );
+                mb.exec();
+                ok = false;
+                break;
+            }
+        }
+
+        if ( !ok )
+        {
+            continue;
+        }
+
+        // Make sure name doesn't already exist
+        if ( m_palette_map.find( input.toStdString() ) != m_palette_map.end() )
+        {
+            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Palette name already exists.", QMessageBox::Ok, this );
+            mb.exec();
+            continue;
+        }
+
+        return input;
+    }
+
+    return "";
+}
+
 
 void
-MainWindow::paletteSave( const PaletteInfo & a_pal_info )
+MainWindow::paletteSave( PaletteInfo & a_pal_info )
 {
+    cout << "pal save" << endl;
+
     // Saving built-in palette triggers Save As processing
     if ( a_pal_info.built_in )
     {
@@ -518,6 +536,8 @@ MainWindow::paletteSave( const PaletteInfo & a_pal_info )
         mb.exec();
     }
 
+    settingsPaletteSave( a_pal_info );
+    m_palette_map[a_pal_info.name].changed = false;
 }
 
 void
@@ -541,10 +561,92 @@ MainWindow::paletteDelete( const PaletteInfo & a_pal_info )
             ui->comboBoxPalette->setCurrentIndex(0);
             m_ignore_pal_sig = false;
 
+            m_palette_map.erase( a_pal_info.name );
+            settingsPaletteDelete( a_pal_info.name );
+
             m_palette_gen.setPaletteColorBands( m_palette_map["Default"].color_bands );
             m_palette_edit_dlg.setPaletteInfo( m_palette_map["Default"] );
         }
     }
+}
+
+// Load all palettes from settings
+void
+MainWindow::settingsPaletteLoadAll()
+{
+    cout << "pal load all" << endl;
+
+    m_ignore_pal_sig = true;
+
+    PaletteInfo pi;
+    PaletteGenerator::ColorBand cb;
+    int i, size;
+
+    pi.built_in = false;
+    pi.changed = false;
+
+    m_settings.beginGroup("palettes");
+
+    QStringList keys = m_settings.childGroups();
+
+    for ( QStringList::const_iterator k = keys.cbegin(); k != keys.cend(); k++ )
+    {
+        pi.name = k->toStdString();
+        pi.color_bands.resize(0);
+
+        cout << "pal load " << pi.name << endl;
+
+        size = m_settings.beginReadArray( *k );
+        for ( i = 0; i < size; ++i )
+        {
+            m_settings.setArrayIndex( i );
+
+            cb.color = m_settings.value( "color" ).toUInt();
+            cb.width = m_settings.value( "width" ).toUInt();
+            cb.mode = (PaletteGenerator::ColorMode)m_settings.value( "mode" ).toUInt();
+
+            pi.color_bands.push_back( cb );
+        }
+
+        m_palette_map[pi.name] = pi;
+        ui->comboBoxPalette->addItem( QString::fromStdString( pi.name ));
+
+        m_settings.endArray();
+    }
+
+    m_settings.endGroup();
+    m_ignore_pal_sig = false;
+}
+
+void
+MainWindow::settingsPaletteSave( PaletteInfo & a_pal_info )
+{
+    cout << "set pal save " << a_pal_info.name << endl;
+
+    m_settings.beginGroup("palettes");
+    m_settings.beginWriteArray( a_pal_info.name );
+
+    int idx = 0;
+    for ( PaletteGenerator::ColorBands::const_iterator cb = a_pal_info.color_bands.begin(); cb != a_pal_info.color_bands.end(); cb++, idx++ )
+    {
+        m_settings.setArrayIndex( idx );
+        m_settings.setValue( "color", cb->color );
+        m_settings.setValue( "width", cb->width );
+        m_settings.setValue( "mode", (int)cb->mode );
+    }
+
+    m_settings.endArray();
+    m_settings.endGroup();
+
+    a_pal_info.changed = false;
+}
+
+void
+MainWindow::settingsPaletteDelete( const string & a_palette_name )
+{
+    m_settings.beginGroup( "palettes" );
+    m_settings.remove( a_palette_name );
+    m_settings.endGroup();
 }
 
 void

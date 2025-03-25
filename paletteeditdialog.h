@@ -12,7 +12,7 @@ public:
     virtual void paletteChanged() = 0;
     virtual void paletteNew() = 0;
     virtual void paletteDuplicate( const PaletteInfo & palette_info ) = 0;
-    virtual void paletteSave( const PaletteInfo & palette_info ) = 0;
+    virtual void paletteSave( PaletteInfo & palette_info ) = 0;
     virtual void paletteDelete( const PaletteInfo & palette_info ) = 0;
 };
 
@@ -66,6 +66,9 @@ private:
         bool eventFilter( QObject *obj, QEvent *event ) override;
     };
 
+
+    void    updateWindowTitle();
+    void    paletteChanged();
     void    closeEvent( QCloseEvent *event );
     void    insertColorControls( int index );
     QFrame* getColorControl( int index );
@@ -75,8 +78,8 @@ private:
     void    setColorSwatch( QFrame * frame, uint32_t color );
     void    swapColors( int index1, int index2 );
     void    setColorSliders( uint32_t color );
-    void    setFocus( QFrame * a_frame );
-    void    setFocus( int index );
+    void    setFocus( QFrame * a_frame, bool force_refresh = false );
+    void    setFocus( int index, bool force_refresh = false );
     int     getColorFrameIndex( QFrame * frame = nullptr );
 
     IPaletteEditObserver &  m_observer;

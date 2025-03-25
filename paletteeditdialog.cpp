@@ -31,28 +31,19 @@ PaletteEditDialog::~PaletteEditDialog()
 }
 
 
+/**
+ * @brief Set (replace) current palette in edit dialog
+ * @param a_palette_info - Palette information structure
+ */
 void
 PaletteEditDialog::setPaletteInfo( PaletteInfo & a_palette_info )
 {
-    QString title = QString("Palette Edit - %1").arg( QString::fromStdString( a_palette_info.name ));
-    if ( a_palette_info.built_in )
-    {
-        title += " (read only)";
-    }
-    else if ( a_palette_info.changed )
-    {
-        title += "*";
-    }
-
-    setWindowTitle( title );
+    m_pal_info = a_palette_info;
+    updateWindowTitle();
 
     QLayout *layout = ui->frameControls->layout();
     size_t i;
     size_t color_count = layout->count() - 1; // -1 for vertical spacer at bottom
-
-    m_pal_info = a_palette_info;
-
-    //cout << "cur col count " << color_count << " new: " << a_colors.size() << endl;
 
     if ( a_palette_info.color_bands.size() > color_count )
     {
@@ -75,17 +66,66 @@ PaletteEditDialog::setPaletteInfo( PaletteInfo & a_palette_info )
         }
     }
 
+    // Ignore callbacks on init
+    m_ignore_color_change_sig = true;
     PaletteGenerator::ColorBands::iterator c = a_palette_info.color_bands.begin();
     for ( i = 0; i < a_palette_info.color_bands.size(); i++, c++ )
     {
         setColor( i, *c, false );
     }
+    m_ignore_color_change_sig = false;
 
-    //cout << "cc " << m_colors.size() << endl;
+    setFocus( 0, true );
 
-    setFocus( 0 );
+    // Enable/disable specific UI controls
+    if ( m_pal_info.built_in )
+    {
+        ui->buttonSavePal->setDisabled( true );
+        ui->buttonDeletePal->setDisabled( true);
+    }
+    else
+    {
+        if ( m_pal_info.changed )
+        {
+            ui->buttonSavePal->setDisabled( false );
+        }
+        else
+        {
+            ui->buttonSavePal->setDisabled( true );
+        }
+        ui->buttonDeletePal->setDisabled( false );
+    }
 }
 
+void
+PaletteEditDialog::updateWindowTitle()
+{
+    QString title = QString("Palette Edit - %1").arg( QString::fromStdString( m_pal_info.name ));
+    if ( m_pal_info.built_in )
+    {
+        title += " (read only)";
+    }
+    else if ( m_pal_info.changed )
+    {
+        title += "*";
+    }
+
+    setWindowTitle( title );
+}
+
+void
+PaletteEditDialog::paletteChanged()
+{
+    bool prev = m_pal_info.changed;
+
+    m_observer.paletteChanged();
+
+    if ( prev != m_pal_info.changed )
+    {
+        updateWindowTitle();
+        ui->buttonSavePal->setDisabled( !m_pal_info.changed );
+    }
+}
 
 PaletteInfo &
 PaletteEditDialog::getPaletteInfo()
@@ -121,7 +161,7 @@ void PaletteEditDialog::moveColorUp()
         if ( index > 0 )
         {
             swapColors( index, index - 1 );
-            m_observer.paletteChanged();
+            paletteChanged();
         }
     }
 }
@@ -134,7 +174,7 @@ void PaletteEditDialog::moveColorDown()
         if ( index < (int)m_pal_info.color_bands.size() - 1 )
         {
             swapColors( index, index + 1 );
-            m_observer.paletteChanged();
+            paletteChanged();
         }
     }
 }
@@ -147,7 +187,7 @@ void PaletteEditDialog::insertColor()
 
     PaletteGenerator::ColorBand band {
         0,
-        10,
+        5,
         PaletteGenerator::CM_LINEAR
     };
 
@@ -155,7 +195,7 @@ void PaletteEditDialog::insertColor()
     setColor( index + 1, band, false );
     setFocus( index + 1 );
     setColorSliders( band.color );
-    m_observer.paletteChanged();
+    paletteChanged();
 }
 
 
@@ -173,8 +213,8 @@ void PaletteEditDialog::deleteColor()
         delete frame;
 
         m_pal_info.color_bands.erase( m_pal_info.color_bands.begin() + index );
-        setFocus( index < (int)m_pal_info.color_bands.size()?index:index-1 );
-        m_observer.paletteChanged();
+        setFocus( index < (int)m_pal_info.color_bands.size() ? index : index - 1 );
+        paletteChanged();
     }
 }
 
@@ -186,7 +226,7 @@ PaletteEditDialog::updateRedValue( int a_value )
     {
         uint32_t color = (a_value << 16) | (ui->sliderGreen->value() << 8) | ui->sliderBlue->value();
         setColor( m_cur_frame, color );
-        m_observer.paletteChanged();
+        paletteChanged();
     }
 }
 
@@ -198,7 +238,7 @@ PaletteEditDialog::updateGreenValue( int a_value )
     {
         uint32_t color = (ui->sliderRed->value() << 16) | (a_value << 8) | ui->sliderBlue->value();
         setColor( m_cur_frame, color );
-        m_observer.paletteChanged();
+        paletteChanged();
     }
 }
 
@@ -210,7 +250,7 @@ PaletteEditDialog::updateBlueValue( int a_value )
     {
         uint32_t color = (ui->sliderRed->value() << 16) | (ui->sliderGreen->value() << 8) | a_value;
         setColor( m_cur_frame, color );
-        m_observer.paletteChanged();
+        paletteChanged();
     }
 }
 
@@ -230,7 +270,7 @@ PaletteEditDialog::colorTextChanged( const QString & a_text )
             setColorSwatch( m_cur_frame, color );
             setColorSliders( color );
             m_pal_info.color_bands[getColorFrameIndex()].color = 0xFF000000 | color;
-            m_observer.paletteChanged();
+            paletteChanged();
         }
     }
 }
@@ -243,7 +283,7 @@ PaletteEditDialog::widthValueChanged( int a_value )
     if ( m_cur_frame && !m_ignore_color_change_sig )
     {
         m_pal_info.color_bands[getColorFrameIndex()].width = a_value;
-        m_observer.paletteChanged();
+        paletteChanged();
     }
 }
 
@@ -255,7 +295,7 @@ PaletteEditDialog::modeIndexChanged( int a_value )
     if ( m_cur_frame && !m_ignore_color_change_sig )
     {
         m_pal_info.color_bands[getColorFrameIndex()].mode = (PaletteGenerator::ColorMode)a_value;
-        m_observer.paletteChanged();
+        paletteChanged();
     }
 }
 
@@ -275,6 +315,10 @@ void
 PaletteEditDialog::paletteSave()
 {
     m_observer.paletteSave( m_pal_info );
+
+    // Update UI based on new status
+    updateWindowTitle();
+    ui->buttonSavePal->setDisabled( true );
 }
 
 void
@@ -317,26 +361,15 @@ PaletteEditDialog::insertColorControls( int a_index )
     connect( edit, SIGNAL(textEdited(QString)), this, SLOT(colorTextChanged(QString)));
 
      // Width input
-    /*
-    edit = new QLineEdit(frame);
-    edit->setText(QString("%1").arg(10));
-    edit->setInputMask("999");
-    edit->setMaxLength(3);
-    layout->addWidget( edit );
-    edit->installEventFilter( &m_event_handler );
-    connect( edit, SIGNAL(textEdited(QString)), this, SLOT(widthTextChanged(QString)));
-    */
     QSpinBox *spin = new QSpinBox(frame);
     spin->setMinimum(1);
     spin->setMaximum(100);
-    spin->setValue(10);
+    spin->setValue(5);
     layout->addWidget( spin );
     spin->installEventFilter( &m_event_handler );
     connect( spin, SIGNAL(valueChanged(int)), this, SLOT(widthValueChanged(int)));
 
     // Mode selection
-    // TODO style is not being applied to combobox
-    //combo->setStyle(QStyleFactory::create("Fusion"));
     QComboBox *combo = new QComboBox(frame);
     combo->addItem( "Flat" );
     combo->addItem( "Linear" );
@@ -431,14 +464,18 @@ PaletteEditDialog::setColorSliders( uint32_t a_color )
     m_ignore_color_slider_sig = false;
 }
 
-
+/**
+ * @brief Updates UI when focused control frame is changed
+ * @param a_frame - The frame that is receiving focus
+ * @param a_force_refresh - Force refresh even if current focus hasn't changed
+ */
 void
-PaletteEditDialog::setFocus( QFrame * a_frame )
+PaletteEditDialog::setFocus( QFrame * a_frame, bool a_force_refresh )
 {
-    if ( a_frame == m_cur_frame )
+    if ( !a_force_refresh && a_frame == m_cur_frame )
         return;
 
-    if ( m_cur_frame  )
+    if ( m_cur_frame )
     {
         m_cur_frame->setStyleSheet("QFrame {border: 1px solid transparent}");
     }
@@ -449,12 +486,22 @@ PaletteEditDialog::setFocus( QFrame * a_frame )
     setColorSliders( m_pal_info.color_bands[getColorFrameIndex()].color );
 }
 
+/**
+ * @brief Updates UI when focused control frame is changed
+ * @param a_index - The frame index that is receiving focus
+ * @param a_force_refresh - Force refresh even if current focus hasn't changed
+ */
 void
-PaletteEditDialog::setFocus( int a_index )
+PaletteEditDialog::setFocus( int a_index, bool a_force_refresh )
 {
-    setFocus(static_cast<QFrame*>(ui->frameControls->layout()->itemAt(a_index)->widget()));
+    setFocus( static_cast<QFrame*>(ui->frameControls->layout()->itemAt(a_index)->widget()), a_force_refresh );
 }
 
+/**
+ * @brief Gets the index of the color control frame relative to the containing frame/layout
+ * @param a_frame - Control frame pointer to get the index of
+ * @return Frame index or -1 if frame not found
+ */
 int
 PaletteEditDialog::getColorFrameIndex( QFrame * a_frame )
 {
