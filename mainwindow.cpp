@@ -234,8 +234,8 @@ MainWindow::saveImage()
 
         for ( PaletteGenerator::ColorBands::const_iterator cb = pal_info.color_bands.begin(); cb != pal_info.color_bands.end(); cb++ )
         {
-            json += QString("\n      {\"color\":%1, \"width\":%2, \"mode\":%2}")
-                        .arg(cb->color)
+            json += QString("\n      {\"color\":%1, \"width\":%2, \"mode\":%3}")
+                        .arg(cb->color) // TODO: integer representation is platform dependent
                         .arg(cb->width)
                         .arg((int)cb->mode);
 
@@ -295,25 +295,98 @@ MainWindow::loadImage()
                     int w = jsonReadInt( obj, "img_width" );
                     int h = jsonReadInt( obj, "img_height" );
 
-                    const QJsonValue val = obj["palette"];
+                    QJsonValue val = obj["palette"];
                     if ( !val.isObject() )
                         throw -1;
 
-                    QJsonObject pal_obj = val.toObject();
-                    QString pal_name = jsonReadString( pal_obj, "name" );
-                    int palette_offset = jsonReadInt( pal_obj, "offset" );
-                    m_palette_scale = jsonReadInt( pal_obj, "scale" );
+                    obj = val.toObject();
+                    QString pal_name = jsonReadString( obj, "name" );
+                    int palette_offset = jsonReadInt( obj, "offset" );
+                    m_palette_scale = jsonReadInt( obj, "scale" );
+
+                    PaletteInfo pal_info;
+                    pal_info.name = pal_name.toStdString();
+                    pal_info.repeat = jsonReadBool( obj, "repeat" );
+                    pal_info.built_in = false;
+                    pal_info.changed = false;
+
+                    val = obj["colors"];
+                    if ( !val.isArray() )
+                        throw -1;
+
+                    PaletteGenerator::ColorBand cb;
+                    QJsonArray colors = val.toArray();
+                    for ( QJsonArray::ConstIterator c = colors.begin(); c != colors.end(); c++ )
+                    {
+                        if ( !c->isObject() )
+                            throw -1;
+
+                        obj = c->toObject();
+                        cb.color = jsonReadInt(obj,"color");
+                        cb.width = jsonReadInt(obj,"width");
+                        cb.mode = (PaletteGenerator::ColorMode)jsonReadInt(obj,"mode");
+                        pal_info.color_bands.push_back(cb);
+                    }
 
                     // TODO All values should be checked for proper range in case file was manually edited
 
                     // Update UI
+                    PaletteMap_t::const_iterator pi = m_palette_map.find( pal_info.name );
+                    if ( pi == m_palette_map.end() )
+                    {
+                        // Palette doesn't exist, add as-is
+                        m_palette_map[pal_info.name] = pal_info;
+                        m_ignore_pal_sig = true;
+                        ui->comboBoxPalette->addItem( pal_name );
+                        m_ignore_pal_sig = false;
+                    }
+                    else
+                    {
+                        // Palette already exists, check if the loaded version is different
+                        bool same = false;
+                        if ( pi->second.repeat == pal_info.repeat && pi->second.color_bands.size() == pal_info.color_bands.size() )
+                        {
+                            same = true;
+                            PaletteGenerator::ColorBands::const_iterator cb1 = pi->second.color_bands.begin(), cb2 = pal_info.color_bands.begin();
+                            for ( ; cb2 != pal_info.color_bands.end(); cb1++, cb2++ )
+                            {
+                                if ( cb1->color != cb2->color || cb1->width != cb2->width || cb1->mode != cb2->mode )
+                                {
+                                    same = false;
+                                    break;
+                                }
+                            }
+                        }
+
+                        if ( !same )
+                        {
+                            // Loaded palette has same name, but different settings
+                            string base_name = pal_info.name + "_", new_name;
+
+                            for ( int i = 0; i < 99; i++ )
+                            {
+                                new_name = base_name + to_string(i);
+                                if ( m_palette_map.find( new_name ) == m_palette_map.end() )
+                                {
+                                    pal_info.name = new_name;
+                                    pal_name = QString::fromStdString( new_name );
+                                    m_palette_map[pal_info.name] = pal_info;
+                                    m_ignore_pal_sig = true;
+                                    ui->comboBoxPalette->addItem( pal_name );
+                                    m_ignore_pal_sig = false;
+                                    break;
+                                }
+                            }
+                            // If no free name found, will just use existing palette
+                        }
+                    }
 
                     adjustPalette( pal_name ); // TODO deal with custom unsaved palettes
                     adjustScaleSliderChanged( m_palette_scale ); // Resets m_palette_offset to 0
 
                     m_ignore_pal_sig = true;
                     ui->comboBoxPalette->setCurrentText( pal_name );
-                    m_ignore_pal_sig = true;
+                    m_ignore_pal_sig = false;
 
                     m_ignore_scale_sig = true;
                     ui->sliderPalScale->setValue( m_palette_scale );
@@ -327,6 +400,10 @@ MainWindow::loadImage()
                     ui->lineEditResolution->setText( w > h ? QString::number( w ) : QString::number( h ));
                     ui->lineEditIterMax->setText( QString::number( m_calc_params.iter_mx ));
                     ui->spinBoxSuperSample->setValue( m_calc_ss );
+
+                    // Ensure home button is enabled
+                    // TODO Should loaded image be pushed onto history?
+                    ui->buttonTop->setDisabled( false );
 
                     // Recalc image
                     calculate();
@@ -387,7 +464,7 @@ MainWindow::jsonReadInt( const QJsonObject & a_obj, const QString & a_key )
     if ( !val.isDouble() )
         throw -1;
 
-    return val.toInt();
+    return val.toInteger();
 }
 
 

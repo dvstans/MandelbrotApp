@@ -281,6 +281,9 @@
        </item>
        <item>
         <widget class="QToolButton" name="buttonLoad">
+         <property name="toolTip">
+          <string>Load image from file</string>
+         </property>
          <property name="text">
           <string>Load</string>
          </property>
@@ -292,7 +295,7 @@
        <item>
         <widget class="QToolButton" name="buttonSave">
          <property name="toolTip">
-          <string>Save current image</string>
+          <string>Save current image to file</string>
          </property>
          <property name="text">
           <string>Save</string>
