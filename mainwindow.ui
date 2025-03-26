@@ -433,7 +433,7 @@
    <sender>buttonCalc</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>Calculate()</slot>
+   <slot>calculate()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>37</x>
@@ -465,7 +465,7 @@
    <sender>sliderPalOffset</sender>
    <signal>valueChanged(int)</signal>
    <receiver>MainWindow</receiver>
-   <slot>PaletteOffsetSliderChanged(int)</slot>
+   <slot>paletteOffsetSliderChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>399</x>
@@ -481,7 +481,7 @@
    <sender>sliderPalScale</sender>
    <signal>valueChanged(int)</signal>
    <receiver>MainWindow</receiver>
-   <slot>PaletteScaleSliderChanged(int)</slot>
+   <slot>paletteScaleSliderChanged(int)</slot>
    <hints>
     <hint type="sourcelabel">
      <x>399</x>
@@ -497,7 +497,7 @@
    <sender>buttonSave</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>SaveImage()</slot>
+   <slot>saveImage()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>613</x>
@@ -513,7 +513,7 @@
    <sender>buttonTop</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>ZoomTop()</slot>
+   <slot>zoomTop()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>66</x>
@@ -589,18 +589,34 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>buttonLoad</sender>
+   <signal>clicked()</signal>
+   <receiver>MainWindow</receiver>
+   <slot>loadImage()</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>838</x>
+     <y>35</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>440</x>
+     <y>381</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
-  <slot>Calculate()</slot>
-  <slot>Exit()</slot>
-  <slot>PaletteOffsetSliderChanged(int)</slot>
-  <slot>PaletteScaleSliderChanged(int)</slot>
-  <slot>SaveImage()</slot>
-  <slot>ZoomTop()</slot>
+  <slot>calculate()</slot>
+  <slot>paletteOffsetSliderChanged(int)</slot>
+  <slot>paletteScaleSliderChanged(int)</slot>
+  <slot>saveImage()</slot>
+  <slot>zoomTop()</slot>
   <slot>prev()</slot>
   <slot>next()</slot>
   <slot>aspectChange(int)</slot>
   <slot>paletteSelect(QString)</slot>
   <slot>paletteEdit()</slot>
+  <slot>loadImage()</slot>
  </slots>
 </ui>

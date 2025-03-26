@@ -28,16 +28,17 @@ public:
 
 public slots:
     void closeEvent( QCloseEvent *event );
-    void Calculate();
-    void ZoomTop();
+    void calculate();
+    void zoomTop();
     void prev();
     void next();
     void aspectChange( int index );
     void paletteSelect( const QString &text );
     void paletteEdit();
-    void PaletteOffsetSliderChanged(int);
-    void PaletteScaleSliderChanged(int);
-    void SaveImage();
+    void paletteOffsetSliderChanged(int);
+    void paletteScaleSliderChanged(int);
+    void saveImage();
+    void loadImage();
 
 private:
     typedef std::map<std::string,PaletteInfo> PaletteMap_t;
@@ -46,6 +47,8 @@ private:
     void    drawImage();
     void    zoomIn( const QRectF & rect );
     void    recenter( const QPointF & pos );
+    void    adjustPalette( const QString &a_text );
+    void    adjustScaleSliderChanged( int a_scale );
     void    paletteChanged();   // IPaletteEditObserver
     void    paletteNew();
     void    paletteDuplicate( const PaletteInfo & palette_info );
@@ -55,6 +58,11 @@ private:
     void    settingsPaletteSave( PaletteInfo & palette_info );
     void    settingsPaletteDelete( const std::string & palette_name );
     QString inputPaletteName( const QString & a_title );
+
+    QString jsonReadString( const QJsonObject & obj, const QString & key );
+    double  jsonReadDouble( const QJsonObject & obj, const QString & key );
+    int     jsonReadInt( const QJsonObject & obj, const QString & key );
+    bool    jsonReadBool( const QJsonObject & obj, const QString & key );
 
     struct AspectRatio
     {
@@ -86,6 +94,7 @@ private:
     uint16_t                    m_palette_scale;
     uint32_t                    m_palette_offset;
     bool                        m_ignore_pal_sig;
+    bool                        m_ignore_scale_sig;
     bool                        m_ignore_off_sig;
     bool                        m_ignore_aspect_sig;
     MandelbrotCalc::CalcParams  m_calc_params;

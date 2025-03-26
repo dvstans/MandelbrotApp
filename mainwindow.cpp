@@ -8,6 +8,10 @@
 #include <QMessageBox>
 #include <QInputDialog>
 #include <QStringList>
+#include <QFile>
+#include <QTextStream>
+#include <QJsonDocument>
+#include <QJsonArray>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -25,6 +29,7 @@ MainWindow::MainWindow(QWidget *parent):
     m_palette_scale(1),
     m_palette_offset(0),
     m_ignore_pal_sig(false),
+    m_ignore_scale_sig(false),
     m_ignore_off_sig(false),
     m_calc_history_idx(0)
 {
@@ -43,15 +48,19 @@ MainWindow::MainWindow(QWidget *parent):
     ui->menubar->hide();
     ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
     ui->lineEditIterMax->setValidator( new QIntValidator(1, 65536, this) );
-    ui->buttonLoad->setDisabled(true); // TODO Reenable when feature implemented
     ui->buttonSave->setDisabled(true);
     ui->buttonTop->setDisabled(true);
     ui->buttonNext->setDisabled(true);
     ui->buttonPrev->setDisabled(true);
 
+    // Set max threads to supported H/W concurrency
+    unsigned int max_th = std::thread::hardware_concurrency();
+    ui->spinBoxThreadCount->setMaximum( max_th );
+    ui->spinBoxThreadCount->setValue( max_th * .75 ); // Don't use all by default
+
     // Because Qt doesn't allow widgets to be sized with points, must adjust fixed size line edits manually
     // QLineEdit has hidden padding, thus string to set width had to be determined experimentally
-    // (i.e. Qt does not accomodate proper scaling on different display DPI)
+    // (i.e. Qt 'desktop' does not accomodate proper scaling on different display DPI)
     QFontMetrics fm = ui->lineEditIterMax->fontMetrics();
     ui->lineEditIterMax->setMinimumWidth( 10 );
     ui->lineEditIterMax->setMaximumWidth( fm.horizontalAdvance("00000000") );
@@ -148,7 +157,7 @@ MainWindow::MainWindow(QWidget *parent):
     ui->sliderPalOffset->setMaximum( m_palette_gen.size() );
     m_ignore_off_sig = false;
 
-    Calculate();
+    calculate();
 }
 
 MainWindow::~MainWindow()
@@ -184,37 +193,212 @@ MainWindow::closeEvent( QCloseEvent *event )
 }
 
 void
-MainWindow::SaveImage()
+MainWindow::saveImage()
 {
     QString fname = QFileDialog::getSaveFileName( this, "Save Image", "image.png", "Images (*.png)");
 
     if ( fname.length() )
     {
-        // Save file
+        // Save image file
+        // TODO: QImageWriter does not support EXIF metadata, must use an external library
         QImageWriter writer(fname);
         QImage image = m_viewer->getImage();
+        writer.write( image );
 
-        // TODO: QImageWriter does not support EXIF metadata, must use an external library
-        /*
-        QString comments = QString("(%1,%2)->(%3,%4), iter: %5, w: %6, h: %7, tc: %8, ss: %9, msec: %10")
-            .arg(m_calc_result.x1)
-            .arg(m_calc_result.y1)
-            .arg(m_calc_result.x2)
-            .arg(m_calc_result.y2)
+        // Generate JSON metadata file
+        // Filename is image filename with ".json" extention
+        fname.resize( fname.length() - 3 );
+        fname += "json";
+
+        // NOTE: json doubles have lower precision than standard 64-bit doubles
+        // For this reason, the must be written and read as strings
+
+        QString json = QString("{\n  \"x1\":\"%1\",\n  \"y1\":\"%2\",\n  \"x2\":\"%3\",\n  \"y2\":\"%4\",\n  \"iter_mx\":%5,\n  \"img_width\":%6,\n  \"img_height\":%7,\n  \"th_cnt\":%8,\n  \"ss\":%9,\n  \"time_ms\":%10,\n")
+            .arg(m_calc_result.x1,0,'g',17)
+            .arg(m_calc_result.y1,0,'g',17)
+            .arg(m_calc_result.x2,0,'g',17)
+            .arg(m_calc_result.y2,0,'g',17)
             .arg(m_calc_result.iter_mx)
-            .arg(m_calc_result.img_width)
-            .arg(m_calc_result.img_height)
+            .arg(m_calc_result.img_width/m_calc_ss)
+            .arg(m_calc_result.img_height/m_calc_ss)
             .arg(m_calc_result.th_cnt)
             .arg(m_calc_ss)
             .arg(m_calc_result.time_ms);
 
-        writer.setFormat("PNG");
-        writer.setText("Title", "Mandelbrot Image");
-        writer.setText("Comments", comments );
-        */
+        const PaletteInfo & pal_info = m_palette_edit_dlg.getPaletteInfo();
+        json += QString("  \"palette\":{\n    \"name\":\"%1\",\n    \"scale\":%2,\n    \"offset\":%3,\n    \"repeat\":%4,\n    \"colors\":[")
+                    .arg(QString::fromStdString(pal_info.name))
+                    .arg(m_palette_scale)
+                    .arg(m_palette_offset)
+                    .arg(pal_info.repeat?"true":"false");
 
-        writer.write( image );
+        for ( PaletteGenerator::ColorBands::const_iterator cb = pal_info.color_bands.begin(); cb != pal_info.color_bands.end(); cb++ )
+        {
+            json += QString("\n      {\"color\":%1, \"width\":%2, \"mode\":%2}")
+                        .arg(cb->color)
+                        .arg(cb->width)
+                        .arg((int)cb->mode);
+
+            if ( cb != pal_info.color_bands.end() - 1 )
+            {
+                json += ",";
+            }
+        }
+
+        json += "\n    ]\n  }\n}";
+
+        QFile mdfile(fname);
+        if ( mdfile.open( QIODevice::WriteOnly ))
+        {
+            QTextStream stream( &mdfile );
+            stream << json;
+        }
     }
+}
+
+
+void
+MainWindow::loadImage()
+{
+    QString fname = QFileDialog::getOpenFileName( this, "Open Image", "image.png", "Images (*.png)" );
+
+    if ( fname.length() )
+    {
+        fname.resize( fname.length() - 3 );
+        fname += "json";
+
+        QFile mdfile(fname);
+        if ( mdfile.open( QIODevice::ReadOnly ))
+        {
+            QTextStream stream( &mdfile );
+            QString json = stream.readAll();
+            mdfile.close();
+
+            QJsonParseError err;
+            QJsonDocument doc = QJsonDocument::fromJson( json.toUtf8(), &err );
+            if ( err.error == QJsonParseError::NoError )
+            {
+                try
+                {
+                    if ( !doc.isObject() )
+                        throw -1;
+
+                    QJsonObject obj = doc.object();
+
+                    m_calc_params.x1 = jsonReadDouble( obj, "x1" );
+                    m_calc_params.y1 = jsonReadDouble( obj, "y1" );
+                    m_calc_params.x2 = jsonReadDouble( obj, "x2" );
+                    m_calc_params.y2 = jsonReadDouble( obj, "y2" );
+                    m_calc_params.iter_mx = jsonReadInt( obj, "iter_mx" );
+                    m_calc_result.th_cnt = jsonReadInt( obj, "th_cnt" );
+                    m_calc_ss = jsonReadInt( obj, "ss" );
+                    int w = jsonReadInt( obj, "img_width" );
+                    int h = jsonReadInt( obj, "img_height" );
+
+                    const QJsonValue val = obj["palette"];
+                    if ( !val.isObject() )
+                        throw -1;
+
+                    QJsonObject pal_obj = val.toObject();
+                    QString pal_name = jsonReadString( pal_obj, "name" );
+                    int palette_offset = jsonReadInt( pal_obj, "offset" );
+                    m_palette_scale = jsonReadInt( pal_obj, "scale" );
+
+                    // TODO All values should be checked for proper range in case file was manually edited
+
+                    // Update UI
+
+                    adjustPalette( pal_name ); // TODO deal with custom unsaved palettes
+                    adjustScaleSliderChanged( m_palette_scale ); // Resets m_palette_offset to 0
+
+                    m_ignore_pal_sig = true;
+                    ui->comboBoxPalette->setCurrentText( pal_name );
+                    m_ignore_pal_sig = true;
+
+                    m_ignore_scale_sig = true;
+                    ui->sliderPalScale->setValue( m_palette_scale );
+                    m_ignore_scale_sig = false;
+
+                    m_ignore_off_sig = true;
+                    ui->sliderPalOffset->setValue( palette_offset );
+                    m_palette_offset = palette_offset;
+                    m_ignore_off_sig = false;
+
+                    ui->lineEditResolution->setText( w > h ? QString::number( w ) : QString::number( h ));
+                    ui->lineEditIterMax->setText( QString::number( m_calc_params.iter_mx ));
+                    ui->spinBoxSuperSample->setValue( m_calc_ss );
+
+                    // Recalc image
+                    calculate();
+                }
+                catch ( int )
+                {
+                    QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Image metadata file contains missing or unexpected data.", QMessageBox::Ok, this );
+                    mb.exec();
+                }
+            }
+            else
+            {
+                cout << err.errorString().toStdString() << endl;
+                QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Image metadata file contains invalid JSON formatting.", QMessageBox::Ok, this );
+                mb.exec();
+            }
+        }
+        else
+        {
+            QMessageBox mb( QMessageBox::Warning, "Mandlebrot App Error", "Could not open image metadata file.", QMessageBox::Ok, this );
+            mb.exec();
+        }
+    }
+}
+
+
+QString
+MainWindow::jsonReadString( const QJsonObject & a_obj, const QString & a_key )
+{
+    const QJsonValue val = a_obj[a_key];
+    if ( !val.isString() )
+        throw -1;
+
+    return val.toString();
+}
+
+double
+MainWindow::jsonReadDouble( const QJsonObject & a_obj, const QString & a_key )
+{
+    // NOTE: json doubles have lower precision than standard 64-bit doubles
+    // For this reason, the must be written and read as strings, and parsed
+    const QJsonValue val = a_obj[a_key];
+    if ( !val.isString() )
+        throw -1;
+
+    bool ok;
+    double res = val.toString().toDouble( &ok );
+    if ( !ok )
+        throw -1;
+
+    return res;
+}
+
+int
+MainWindow::jsonReadInt( const QJsonObject & a_obj, const QString & a_key )
+{
+    const QJsonValue val = a_obj[a_key];
+    if ( !val.isDouble() )
+        throw -1;
+
+    return val.toInt();
+}
+
+
+bool
+MainWindow::jsonReadBool( const QJsonObject & a_obj, const QString & a_key )
+{
+    const QJsonValue val = a_obj[a_key];
+    if ( !val.isBool() )
+        throw -1;
+
+    return val.toBool();
 }
 
 
@@ -227,13 +411,9 @@ MainWindow::aspectChange( int a_index )
     m_viewer->setAspectRatio( m_aspect_ratios[a_index].major, m_aspect_ratios[a_index].minor );
 }
 
-
 void
-MainWindow::paletteSelect( const QString &a_text )
+MainWindow::adjustPalette( const QString &a_text )
 {
-    if ( m_ignore_pal_sig )
-        return;
-
     PaletteInfo & pal_info = m_palette_map[a_text.toStdString()];
     m_palette_gen.setPaletteColorBands( pal_info.color_bands, pal_info.repeat );
     m_palette_edit_dlg.setPaletteInfo( pal_info );
@@ -251,6 +431,16 @@ MainWindow::paletteSelect( const QString &a_text )
     ui->sliderPalOffset->setValue(m_palette_offset);
 
     m_ignore_off_sig = false;
+
+}
+
+void
+MainWindow::paletteSelect( const QString &a_text )
+{
+    if ( m_ignore_pal_sig )
+        return;
+
+    adjustPalette( a_text );
 
     if ( m_calc_result.img_data )
     {
@@ -279,7 +469,7 @@ MainWindow::paletteEdit()
 
 
 void
-MainWindow::PaletteOffsetSliderChanged( int a_offset )
+MainWindow::paletteOffsetSliderChanged( int a_offset )
 {
     if ( m_ignore_off_sig )
     {
@@ -295,18 +485,14 @@ MainWindow::PaletteOffsetSliderChanged( int a_offset )
 }
 
 void
-MainWindow::PaletteScaleSliderChanged( int a_scale )
+MainWindow::adjustScaleSliderChanged( int a_scale )
 {
-    //cout << "scl " << a_scale << endl;
-
     m_palette_scale = a_scale;
 
     // Render palette to determine new size
     uint32_t ps1 = m_palette_gen.size();
     m_palette_gen.renderPalette( m_palette_scale );
     uint32_t ps2 = m_palette_gen.size();
-
-    cout << "scale old sz " << ps1 << " new " << ps2 << endl;
 
     m_ignore_off_sig = true;
 
@@ -321,6 +507,15 @@ MainWindow::PaletteScaleSliderChanged( int a_scale )
     ui->sliderPalOffset->setValue(m_palette_offset);
 
     m_ignore_off_sig = false;
+}
+
+void
+MainWindow::paletteScaleSliderChanged( int a_scale )
+{
+    if ( m_ignore_scale_sig )
+        return;
+
+    adjustScaleSliderChanged( a_scale );
 
     if ( m_calc_result.img_data )
     {
@@ -329,7 +524,7 @@ MainWindow::PaletteScaleSliderChanged( int a_scale )
 }
 
 void
-MainWindow::Calculate()
+MainWindow::calculate()
 {
     ui->buttonCalc->setDisabled(true);
 
@@ -379,14 +574,14 @@ MainWindow::drawImage()
 }
 
 void
-MainWindow::ZoomTop()
+MainWindow::zoomTop()
 {
     m_calc_params.x1 = -2;
     m_calc_params.y1 = -2;
     m_calc_params.x2 = 2;
     m_calc_params.y2 = 2;
 
-    Calculate();
+    calculate();
 
     ui->buttonTop->setDisabled(true);
     ui->buttonNext->setDisabled(m_calc_history.size() == 0);
@@ -697,7 +892,7 @@ MainWindow::prev()
             m_calc_params.y2 = pos.y2;
         }
 
-        Calculate();
+        calculate();
     }
 }
 
@@ -718,7 +913,7 @@ MainWindow::next()
         m_calc_params.x2 = pos.x2;
         m_calc_params.y2 = pos.y2;
 
-        Calculate();
+        calculate();
     }
 }
 
@@ -739,7 +934,7 @@ MainWindow::zoomIn( const QRectF & rect )
 
     //cout << "bounds: " << m_calc_params.x1 << " " << m_calc_params.y1 << " " << m_calc_params.x2 << " " << m_calc_params.y2 << endl;
 
-    Calculate();
+    calculate();
 
     CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
 
@@ -767,7 +962,7 @@ MainWindow::recenter( const QPointF & a_pos )
     m_calc_params.y1 += dy;
     m_calc_params.y2 += dy;
 
-    Calculate();
+    calculate();
 
     CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
 
