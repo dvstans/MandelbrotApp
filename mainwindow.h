@@ -78,6 +78,7 @@ private:
     PaletteEditDialog           m_palette_edit_dlg;
     bool                        m_palette_dlg_edit_init;
     PaletteGenerator            m_palette_gen;
+    bool                        m_palette_repeat;
     MandelbrotCalc::CalcResult  m_calc_result;
     uint8_t                     m_calc_ss;
     PaletteMap_t                m_palette_map;

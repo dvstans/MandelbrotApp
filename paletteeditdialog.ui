@@ -149,7 +149,7 @@
       <item row="0" column="1">
        <widget class="QSlider" name="sliderRed">
         <property name="minimum">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="maximum">
          <number>255</number>
@@ -169,7 +169,7 @@
       <item row="1" column="1">
        <widget class="QSlider" name="sliderGreen">
         <property name="minimum">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="maximum">
          <number>255</number>
@@ -189,7 +189,7 @@
       <item row="2" column="1">
        <widget class="QSlider" name="sliderBlue">
         <property name="minimum">
-         <number>1</number>
+         <number>0</number>
         </property>
         <property name="maximum">
          <number>255</number>

@@ -97,6 +97,7 @@ MainWindow::MainWindow(QWidget *parent):
             {0xFF00FF00,10,PaletteGenerator::CM_LINEAR},
             {0xFF00FFFF,10,PaletteGenerator::CM_LINEAR}
         },
+        false,
         true,
         false
     };
@@ -111,6 +112,7 @@ MainWindow::MainWindow(QWidget *parent):
             {0xFFFFFFFF,1,PaletteGenerator::CM_FLAT}
         },
         true,
+        true,
         false
     };
 
@@ -124,6 +126,7 @@ MainWindow::MainWindow(QWidget *parent):
             {0xFFFFFF00,10,PaletteGenerator::CM_LINEAR}
         },
         true,
+        true,
         false
     };
 
@@ -136,12 +139,13 @@ MainWindow::MainWindow(QWidget *parent):
     settingsPaletteLoadAll();
 
     // Set initial palette
-    m_palette_gen.setPaletteColorBands( m_palette_map["Default"].color_bands );
-    m_palette_edit_dlg.setPaletteInfo( m_palette_map["Default"] );
+    PaletteInfo & pal_info = m_palette_map["Default"];
+    m_palette_gen.setPaletteColorBands( pal_info.color_bands, pal_info.repeat );
+    m_palette_edit_dlg.setPaletteInfo( pal_info );
 
     // Setup palette sliders
     m_ignore_off_sig = true;
-    ui->sliderPalOffset->setMaximum( m_palette_gen.getPaletteSize() );
+    ui->sliderPalOffset->setMaximum( m_palette_gen.size() );
     m_ignore_off_sig = false;
 
     Calculate();
@@ -231,10 +235,10 @@ MainWindow::paletteSelect( const QString &a_text )
         return;
 
     PaletteInfo & pal_info = m_palette_map[a_text.toStdString()];
-    m_palette_gen.setPaletteColorBands( pal_info.color_bands );
+    m_palette_gen.setPaletteColorBands( pal_info.color_bands, pal_info.repeat );
     m_palette_edit_dlg.setPaletteInfo( pal_info );
 
-    uint32_t ps = m_palette_gen.getPaletteSize();
+    uint32_t ps = m_palette_gen.size();
 
     m_ignore_off_sig = true;
 
@@ -298,9 +302,11 @@ MainWindow::PaletteScaleSliderChanged( int a_scale )
     m_palette_scale = a_scale;
 
     // Render palette to determine new size
-    uint32_t ps1 = m_palette_gen.getPaletteSize();
+    uint32_t ps1 = m_palette_gen.size();
     m_palette_gen.renderPalette( m_palette_scale );
-    uint32_t ps2 = m_palette_gen.getPaletteSize();
+    uint32_t ps2 = m_palette_gen.size();
+
+    cout << "scale old sz " << ps1 << " new " << ps2 << endl;
 
     m_ignore_off_sig = true;
 
@@ -308,7 +314,8 @@ MainWindow::PaletteScaleSliderChanged( int a_scale )
     ui->sliderPalOffset->setMaximum( ps2 );
 
     // Adjust offset based on new scale
-    m_palette_offset = round(m_palette_offset*ps2/ps1);
+    m_palette_offset = m_palette_offset*ps2/ps1;
+    //m_palette_offset = round(m_palette_offset*ps2/ps1);
 
     // Update slider value
     ui->sliderPalOffset->setValue(m_palette_offset);
@@ -398,7 +405,8 @@ void
 MainWindow::paletteChanged()
 {
     PaletteInfo & pal = m_palette_edit_dlg.getPaletteInfo();
-    m_palette_gen.setPaletteColorBands( pal.color_bands );
+    m_palette_repeat = pal.repeat;
+    m_palette_gen.setPaletteColorBands( pal.color_bands, pal.repeat );
 
     if ( !pal.built_in )
     {
@@ -426,6 +434,7 @@ MainWindow::paletteNew()
                     {0xFFFFFFFF,5,PaletteGenerator::CM_LINEAR},
                     {0xFF000000,5,PaletteGenerator::CM_LINEAR}
                 },
+                true,
                 false,
                 true
             };
@@ -435,8 +444,10 @@ MainWindow::paletteNew()
         ui->comboBoxPalette->setCurrentIndex(ui->comboBoxPalette->count()-1);
         m_ignore_pal_sig = false;
 
-        m_palette_gen.setPaletteColorBands( m_palette_map[name].color_bands );
+        m_palette_gen.setPaletteColorBands( m_palette_map[name].color_bands, true );
         m_palette_edit_dlg.setPaletteInfo( m_palette_map[name] );
+
+        drawImage();
     }
 }
 
@@ -454,6 +465,7 @@ MainWindow::paletteDuplicate( const PaletteInfo & a_pal_info )
         PaletteInfo info = {
             name,
             a_pal_info.color_bands,
+            a_pal_info.repeat,
             false,
             true
         };
@@ -465,7 +477,7 @@ MainWindow::paletteDuplicate( const PaletteInfo & a_pal_info )
         ui->comboBoxPalette->setCurrentIndex(ui->comboBoxPalette->count()-1);
         m_ignore_pal_sig = false;
 
-        m_palette_gen.setPaletteColorBands( info.color_bands );
+        m_palette_gen.setPaletteColorBands( info.color_bands, a_pal_info.repeat );
         m_palette_edit_dlg.setPaletteInfo( info );
     }
 }
@@ -564,8 +576,12 @@ MainWindow::paletteDelete( const PaletteInfo & a_pal_info )
             m_palette_map.erase( a_pal_info.name );
             settingsPaletteDelete( a_pal_info.name );
 
-            m_palette_gen.setPaletteColorBands( m_palette_map["Default"].color_bands );
-            m_palette_edit_dlg.setPaletteInfo( m_palette_map["Default"] );
+            PaletteInfo & pal_info = m_palette_map["Default"];
+
+            m_palette_gen.setPaletteColorBands( pal_info.color_bands, pal_info.repeat );
+            m_palette_edit_dlg.setPaletteInfo( pal_info );
+
+            drawImage();
         }
     }
 }
@@ -765,12 +781,17 @@ MainWindow::renderImage()
     int imstride = m_calc_result.img_width*4;
     uchar *imbuffer = new uchar[imstride*m_calc_result.img_height];
     int x;
-    const uint16_t * itbuf;
+    const uint16_t * itbuf = m_calc_result.img_data;
     uint32_t *imbuf;
-
     const std::vector<uint32_t> & palette = m_palette_gen.renderPalette( m_palette_scale );
+    bool repeats = m_palette_gen.repeats();
+    size_t pal_size = palette.size();
+    uint32_t pal_lim = m_palette_offset + palette.size();
+    uint32_t col_first = palette[0];
+    uint32_t col_last = palette[pal_size-1];
 
-    itbuf = m_calc_result.img_data;
+    cout << "pal_lim " << pal_lim << endl;
+    cout << "col_last " << hex << col_last << endl;
 
     // Must reverse y-axis due to difference in mathematical and graphical origin
     for ( int y = m_calc_result.img_height - 1; y > -1; y-- )
@@ -785,7 +806,25 @@ MainWindow::renderImage()
             }
             else
             {
-                *imbuf++ = palette[(*itbuf + m_palette_offset)% palette.size()];
+                if ( repeats )
+                {
+                    *imbuf++ = palette[(*itbuf + m_palette_offset) % pal_size];
+                }
+                else
+                {
+                    if ( *itbuf < m_palette_offset )
+                    {
+                        *imbuf++ = col_first;
+                    }
+                    else if ( *itbuf < pal_lim )
+                    {
+                        *imbuf++ = palette[*itbuf - m_palette_offset];
+                    }
+                    else
+                    {
+                        *imbuf++ = col_last;
+                    }
+                }
             }
         }
     }

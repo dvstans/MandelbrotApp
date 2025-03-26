@@ -8,6 +8,7 @@ struct PaletteInfo
 {
     std::string                     name;
     PaletteGenerator::ColorBands    color_bands;
+    bool                            repeat;
     bool                            built_in;
     bool                            changed;
 };

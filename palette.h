@@ -26,17 +26,22 @@ public:
     PaletteGenerator();
 
     void
-    setPaletteColorBands( const ColorBands & a_bands );
+    setPaletteColorBands( const ColorBands & a_bands, bool a_repeat = true );
 
     const Palette &
     renderPalette( uint8_t scale = 1 );
 
     size_t
-    getPaletteSize()
+    size()
     {
         return m_palette_size*m_scale;
     }
 
+    bool
+    repeats()
+    {
+        return m_repeat;
+    }
 
 private:
     void        generatePalette();
@@ -45,6 +50,7 @@ private:
     Palette     m_palette;
     uint32_t    m_palette_size;
     uint8_t     m_scale;
+    bool        m_repeat;
 };
 
 #endif // PALETTE_H

@@ -9,15 +9,24 @@ PaletteGenerator::PaletteGenerator():
 {}
 
 void
-PaletteGenerator::setPaletteColorBands( const ColorBands & a_bands )
+PaletteGenerator::setPaletteColorBands( const ColorBands & a_bands, bool a_repeat )
 {
     m_bands = a_bands;
     m_palette.resize(0);
     m_palette_size = 0;
+    m_repeat = a_repeat;
 
     for ( ColorBands::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
     {
-        m_palette_size += cb->width;
+        if ( !m_repeat && cb == m_bands.end() - 1)
+        {
+            m_palette_size++;
+            continue;
+        }
+        else
+        {
+            m_palette_size += cb->width;
+        }
     }
 
     generatePalette();
@@ -39,7 +48,7 @@ PaletteGenerator::renderPalette( uint8_t a_scale )
 void
 PaletteGenerator::generatePalette()
 {
-    m_palette.resize(m_palette_size*m_scale);
+    m_palette.resize(m_palette_size*m_scale - (m_repeat?0:m_scale-1));
 
     ColorBands::const_iterator cb2;
     uint32_t * color = m_palette.data();
@@ -51,6 +60,12 @@ PaletteGenerator::generatePalette()
 
     for ( ColorBands::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
     {
+        if ( !m_repeat && cb == m_bands.end() - 1)
+        {
+            *color++ = cb->color;
+            continue;
+        }
+
         w = cb->width * m_scale;
 
         if ( cb->mode == CM_LINEAR )
@@ -76,19 +91,19 @@ PaletteGenerator::generatePalette()
             dg = (double)(g2 - g1)/w;
             db = (double)(b2 - b1)/w;
 
-            for ( i = 0; i < w; i++, color++ )
+            for ( i = 0; i < w; i++ )
             {
                 r = (uint8_t)round(r1 + i*dr);
                 g = (uint8_t)round(g1 + i*dg);
                 b = (uint8_t)round(b1 + i*db);
-                *color = 0xFF000000 | r << 16 | g << 8 | b;
+                *color++ = 0xFF000000 | r << 16 | g << 8 | b;
             }
         }
         else // CM_FLAT
         {
-            for ( i = 0; i < w; i++, color++ )
+            for ( i = 0; i < w; i++ )
             {
-                *color = cb->color;
+                *color++ = cb->color;
             }
         }
     }
