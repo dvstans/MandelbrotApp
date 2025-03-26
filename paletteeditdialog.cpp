@@ -73,9 +73,13 @@ PaletteEditDialog::setPaletteInfo( PaletteInfo & a_palette_info )
     {
         setColor( i, *c, false );
     }
+
+    ui->checkBoxRepeat->setCheckState( a_palette_info.repeat ? Qt::Checked : Qt::Unchecked );
+
     m_ignore_color_change_sig = false;
 
     setFocus( 0, true );
+
 
     // Enable/disable specific UI controls
     if ( m_pal_info.built_in )
@@ -295,6 +299,16 @@ PaletteEditDialog::modeIndexChanged( int a_value )
     if ( m_cur_frame && !m_ignore_color_change_sig )
     {
         m_pal_info.color_bands[getColorFrameIndex()].mode = (PaletteGenerator::ColorMode)a_value;
+        paletteChanged();
+    }
+}
+
+void
+PaletteEditDialog::repeatStateChanged( int a_state )
+{
+    if ( m_cur_frame && !m_ignore_color_change_sig )
+    {
+        m_pal_info.repeat = ( a_state == Qt::Checked ? true : false );
         paletteChanged();
     }
 }

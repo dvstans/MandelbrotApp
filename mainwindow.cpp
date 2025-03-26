@@ -607,12 +607,13 @@ MainWindow::settingsPaletteLoadAll()
 
     for ( QStringList::const_iterator k = keys.cbegin(); k != keys.cend(); k++ )
     {
+        m_settings.beginGroup(*k);
+
         pi.name = k->toStdString();
+        pi.repeat = m_settings.value( "repeat" ).toBool();
         pi.color_bands.resize(0);
 
-        cout << "pal load " << pi.name << endl;
-
-        size = m_settings.beginReadArray( *k );
+        size = m_settings.beginReadArray( "colors" );
         for ( i = 0; i < size; ++i )
         {
             m_settings.setArrayIndex( i );
@@ -624,10 +625,12 @@ MainWindow::settingsPaletteLoadAll()
             pi.color_bands.push_back( cb );
         }
 
+        m_settings.endArray();
+
         m_palette_map[pi.name] = pi;
         ui->comboBoxPalette->addItem( QString::fromStdString( pi.name ));
 
-        m_settings.endArray();
+        m_settings.endGroup();
     }
 
     m_settings.endGroup();
@@ -640,7 +643,10 @@ MainWindow::settingsPaletteSave( PaletteInfo & a_pal_info )
     cout << "set pal save " << a_pal_info.name << endl;
 
     m_settings.beginGroup("palettes");
-    m_settings.beginWriteArray( a_pal_info.name );
+
+    m_settings.beginGroup(a_pal_info.name);
+    m_settings.setValue( "repeat", a_pal_info.repeat );
+    m_settings.beginWriteArray( "colors" );
 
     int idx = 0;
     for ( PaletteGenerator::ColorBands::const_iterator cb = a_pal_info.color_bands.begin(); cb != a_pal_info.color_bands.end(); cb++, idx++ )
@@ -652,6 +658,7 @@ MainWindow::settingsPaletteSave( PaletteInfo & a_pal_info )
     }
 
     m_settings.endArray();
+    m_settings.endGroup();
     m_settings.endGroup();
 
     a_pal_info.changed = false;

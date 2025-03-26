@@ -47,6 +47,7 @@ public slots:
     void colorTextChanged( const QString & text );
     void widthValueChanged( int value );
     void modeIndexChanged( int value );
+    void repeatStateChanged( int state );
     void paletteNew();
     void paletteDuplicate();
     void paletteSave();
