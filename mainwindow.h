@@ -101,6 +101,7 @@ private:
     std::vector<AspectRatio>    m_aspect_ratios;
     std::vector<CalcPos>        m_calc_history;
     uint32_t                    m_calc_history_idx;
+    QString                     m_cur_dir;
 
     friend class MandelbrotViewer;
 };

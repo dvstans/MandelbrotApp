@@ -195,13 +195,19 @@ MainWindow::closeEvent( QCloseEvent *event )
 void
 MainWindow::saveImage()
 {
-    QString fname = QFileDialog::getSaveFileName( this, "Save Image", "image.png", "Images (*.png)");
+    QString path = m_cur_dir.length() ? m_cur_dir : "image.png";
+    QString fname = QFileDialog::getSaveFileName( this, "Save Image", path, "Images (*.png *.jpg)");
 
     if ( fname.length() )
     {
+        QFileInfo fi( fname );
+        m_cur_dir = fi.absolutePath();
+
         // Save image file
         // TODO: QImageWriter does not support EXIF metadata, must use an external library
         QImageWriter writer(fname);
+        QList<QByteArray> subtypes = writer.supportedSubTypes();
+
         QImage image = m_viewer->getImage();
         writer.write( image );
 
@@ -260,10 +266,14 @@ MainWindow::saveImage()
 void
 MainWindow::loadImage()
 {
-    QString fname = QFileDialog::getOpenFileName( this, "Open Image", "image.png", "Images (*.png)" );
+    QString path = m_cur_dir.length() ? m_cur_dir : "image.png";
+    QString fname = QFileDialog::getOpenFileName( this, "Open Image", path, "Images (*.png *.jpg)" );
 
     if ( fname.length() )
     {
+        QFileInfo fi( fname );
+        m_cur_dir = fi.absoluteFilePath();
+
         fname.resize( fname.length() - 3 );
         fname += "json";
 
