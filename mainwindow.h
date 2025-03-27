@@ -43,6 +43,7 @@ public slots:
 private:
     typedef std::map<std::string,PaletteInfo> PaletteMap_t;
 
+    void    runCalculate();
     uchar * renderImage();
     void    drawImage();
     void    zoomIn( const QRectF & rect );

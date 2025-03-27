@@ -12,6 +12,7 @@
 #include <QTextStream>
 #include <QJsonDocument>
 #include <QJsonArray>
+#include <QTimer>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -614,7 +615,13 @@ void
 MainWindow::calculate()
 {
     ui->buttonCalc->setDisabled(true);
+    QApplication::processEvents();
+    QTimer::singleShot(0, this, &MainWindow::runCalculate );
+}
 
+void
+MainWindow::runCalculate()
+{
     m_calc_ss = ui->spinBoxSuperSample->value();
 
     m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
@@ -626,16 +633,16 @@ MainWindow::calculate()
     drawImage();
 
     setWindowTitle( QString("Mandelbrot App (%1,%2)->(%3,%4), it: %5, w: %6, h: %7, tc: %8, ss: %9, ms: %10")
-       .arg(m_calc_result.x1)
-       .arg(m_calc_result.y1)
-       .arg(m_calc_result.x2)
-       .arg(m_calc_result.y2)
-       .arg(m_calc_result.iter_mx)
-       .arg(m_calc_result.img_width)
-       .arg(m_calc_result.img_height)
-       .arg(m_calc_result.th_cnt)
-       .arg(m_calc_ss)
-       .arg(m_calc_result.time_ms));
+                       .arg(m_calc_result.x1)
+                       .arg(m_calc_result.y1)
+                       .arg(m_calc_result.x2)
+                       .arg(m_calc_result.y2)
+                       .arg(m_calc_result.iter_mx)
+                       .arg(m_calc_result.img_width)
+                       .arg(m_calc_result.img_height)
+                       .arg(m_calc_result.th_cnt)
+                       .arg(m_calc_ss)
+                       .arg(m_calc_result.time_ms));
 
     ui->buttonCalc->setDisabled(false);
     ui->buttonSave->setDisabled(false);
