@@ -3,12 +3,9 @@
 #include <QApplication>
 #include <QStyleFactory>
 #include <QFile>
-#include <iostream>
 
 int main(int argc, char *argv[])
 {
-    std::cout << "starting app" << std::endl;
-
     QCoreApplication::setOrganizationName("DVStansberry");
     QCoreApplication::setApplicationName("MandelbrotApp");
 

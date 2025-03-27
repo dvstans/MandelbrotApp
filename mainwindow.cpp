@@ -821,8 +821,6 @@ MainWindow::inputPaletteName( const QString & a_title )
 void
 MainWindow::paletteSave( PaletteInfo & a_pal_info )
 {
-    cout << "pal save" << endl;
-
     // Saving built-in palette triggers Save As processing
     if ( a_pal_info.built_in )
     {
@@ -872,8 +870,6 @@ MainWindow::paletteDelete( const PaletteInfo & a_pal_info )
 void
 MainWindow::settingsPaletteLoadAll()
 {
-    cout << "pal load all" << endl;
-
     m_ignore_pal_sig = true;
 
     PaletteInfo pi;
@@ -922,8 +918,6 @@ MainWindow::settingsPaletteLoadAll()
 void
 MainWindow::settingsPaletteSave( PaletteInfo & a_pal_info )
 {
-    cout << "set pal save " << a_pal_info.name << endl;
-
     m_settings.beginGroup("palettes");
 
     m_settings.beginGroup(a_pal_info.name);
@@ -1008,8 +1002,6 @@ MainWindow::next()
 void
 MainWindow::zoomIn( const QRectF & rect )
 {
-    //cout << "rect: " << rect.x() << " " << rect.y() << " " << rect.width() << " " << rect.height() << endl;
-
     // Calc new set coords based on new image coords (rect)
     double sx = (m_calc_params.x2-m_calc_params.x1)*m_calc_ss/m_calc_result.img_width;
     double sy = (m_calc_params.y2-m_calc_params.y1)*m_calc_ss/m_calc_result.img_height;
@@ -1018,8 +1010,6 @@ MainWindow::zoomIn( const QRectF & rect )
     m_calc_params.x2 = m_calc_params.x1 + (rect.width()-1)*sx;
     m_calc_params.y1 = m_calc_params.y1 + ((m_calc_result.img_height/m_calc_ss) - (rect.y() + rect.height() - 1))*sy;
     m_calc_params.y2 = m_calc_params.y1 + (rect.height()-1)*sy;
-
-    //cout << "bounds: " << m_calc_params.x1 << " " << m_calc_params.y1 << " " << m_calc_params.x2 << " " << m_calc_params.y2 << endl;
 
     calculate();
 
@@ -1078,9 +1068,6 @@ MainWindow::renderImage()
     uint32_t pal_lim = m_palette_offset + palette.size();
     uint32_t col_first = palette[0];
     uint32_t col_last = palette[pal_size-1];
-
-    cout << "pal_lim " << pal_lim << endl;
-    cout << "col_last " << hex << col_last << endl;
 
     // Must reverse y-axis due to difference in mathematical and graphical origin
     for ( int y = m_calc_result.img_height - 1; y > -1; y-- )

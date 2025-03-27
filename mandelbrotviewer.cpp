@@ -1,4 +1,3 @@
-#include<iostream>
 #include <QMouseEvent>
 #include <QVBoxLayout>
 #include "mandelbrotviewer.h"
@@ -82,9 +81,6 @@ MandelbrotViewer::mousePressEvent( QMouseEvent *a_event )
 {
     m_buttons = a_event->buttons();
     QPointF pos = mapToScene(a_event->pos());
-
-    //cout << "but " << hex << m_buttons << " mod " << a_event->modifiers() << " drag " << m_dragging << endl;
-    //cout << a_event->pos().x() << "," << a_event->pos().y() << " -> " << pos.x() << "," << pos.y() << endl;
 
     // Start zoom window on left mouse button down event
     if ( m_buttons == Qt::LeftButton && a_event->modifiers() == Qt::NoModifier )
@@ -226,8 +222,6 @@ MandelbrotViewer::selecetRectIntersect( const QPointF &a_origin, const QPointF &
             a_origin.x() <= a_cursor.x() ? x2 = x1 + w2 : x1 = x2 - w2;
         }
     }
-
-    //cout << "sel " << x1 << " " << y1 << " " << (x2-x1+1) << " " << (y2-y1+1) << endl;
 
     m_sel_rect.setRect( x1, y1, (x2-x1+1),(y2-y1+1));
 

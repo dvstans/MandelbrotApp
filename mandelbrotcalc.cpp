@@ -37,8 +37,6 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
 
 MandelbrotCalc::~MandelbrotCalc()
 {
-    cout << "calc exit" << endl;
-
     stop();
 
     if ( m_data )
@@ -214,7 +212,7 @@ MandelbrotCalc::calculate( CalcParams & a_params )
 void
 MandelbrotCalc::workerThread( uint8_t a_id )
 {
-    cout << "TS" << (int)a_id << endl;
+    //cout << "TS" << (int)a_id << endl;
 
     unique_lock lock( m_worker_mutex, defer_lock );
     uint16_t    x;
@@ -289,5 +287,5 @@ MandelbrotCalc::workerThread( uint8_t a_id )
         }
     }
 
-    cout << "TX" << (int)a_id << endl;
+    //cout << "TX" << (int)a_id << endl;
 }
