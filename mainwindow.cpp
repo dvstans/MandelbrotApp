@@ -32,9 +32,10 @@ MainWindow::MainWindow(QWidget *parent):
     m_ignore_pal_sig(false),
     m_ignore_scale_sig(false),
     m_ignore_off_sig(false),
-    m_calc_history_idx(0)
+    m_calc_history_idx(0),
+    m_app_name( QString("MandelbrotApp ") + APP_VERSION )
 {
-    setWindowTitle("Mandelbrot App");
+    setWindowTitle( m_app_name );
     ui->setupUi(this);
 
     // Setup MandelbrotViewer
@@ -643,17 +644,16 @@ MainWindow::runCalculate()
 
     drawImage();
 
-    setWindowTitle( QString("Mandelbrot App (%1,%2)->(%3,%4), it: %5, w: %6, h: %7, tc: %8, ss: %9, ms: %10")
-                       .arg(m_calc_result.x1)
-                       .arg(m_calc_result.y1)
-                       .arg(m_calc_result.x2)
-                       .arg(m_calc_result.y2)
-                       .arg(m_calc_result.iter_mx)
-                       .arg(m_calc_result.img_width)
-                       .arg(m_calc_result.img_height)
-                       .arg(m_calc_result.th_cnt)
-                       .arg(m_calc_ss)
-                       .arg(m_calc_result.time_ms));
+    setWindowTitle( QString("%1  (%2,%3)->(%4,%5)  %6w x %7h  msec: %8")
+        .arg(m_app_name)
+        .arg(m_calc_result.x1)
+        .arg(m_calc_result.y1)
+        .arg(m_calc_result.x2)
+        .arg(m_calc_result.y2)
+        .arg(m_calc_result.img_width)
+        .arg(m_calc_result.img_height)
+        .arg(m_calc_result.time_ms)
+        );
 
     ui->buttonCalc->setDisabled(false);
     ui->buttonSave->setDisabled(false);

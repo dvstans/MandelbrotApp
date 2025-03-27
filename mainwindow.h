@@ -105,6 +105,7 @@ private:
     std::vector<CalcPos>        m_calc_history;
     uint32_t                    m_calc_history_idx;
     QString                     m_cur_dir;
+    QString                     m_app_name;
 
     friend class MandelbrotViewer;
 };
