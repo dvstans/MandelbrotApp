@@ -53,6 +53,7 @@ MainWindow::MainWindow(QWidget *parent):
     ui->buttonTop->setDisabled(true);
     ui->buttonNext->setDisabled(true);
     ui->buttonPrev->setDisabled(true);
+    ui->buttonZoomOut->setDisabled(true);
 
     // Set max threads to supported H/W concurrency
     unsigned int max_th = std::thread::hardware_concurrency();
@@ -418,6 +419,17 @@ MainWindow::loadImage()
 
                     // Recalc image
                     calculate();
+
+                    CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
+
+                    // Loading image clears position history
+                    m_calc_history.resize(0);
+                    m_calc_history.push_back( pos );
+                    m_calc_history_idx = 1;
+
+                    ui->buttonTop->setDisabled(false);
+                    ui->buttonNext->setDisabled(true);
+                    ui->buttonPrev->setDisabled(false);
                 }
                 catch ( int )
                 {
@@ -589,7 +601,6 @@ MainWindow::adjustScaleSliderChanged( int a_scale )
 
     // Adjust offset based on new scale
     m_palette_offset = m_palette_offset*ps2/ps1;
-    //m_palette_offset = round(m_palette_offset*ps2/ps1);
 
     // Update slider value
     ui->sliderPalOffset->setValue(m_palette_offset);
@@ -680,7 +691,79 @@ MainWindow::zoomTop()
     ui->buttonTop->setDisabled(true);
     ui->buttonNext->setDisabled(m_calc_history.size() == 0);
     ui->buttonPrev->setDisabled(true);
+    ui->buttonZoomOut->setDisabled(true);
     m_calc_history_idx = 0;
+}
+
+/**
+ * @brief Zooms into the current image by a factor of 2 (public slot)
+ *
+ * Zooming in truncates the current position history.
+ */
+void
+MainWindow::zoomIn()
+{
+    double dx = (m_calc_params.x2 - m_calc_params.x1)/4;
+    double dy = (m_calc_params.y2 - m_calc_params.y1)/4;
+
+    m_calc_params.x1 += dx;
+    m_calc_params.y1 += dy;
+    m_calc_params.x2 -= dx;
+    m_calc_params.y2 -= dy;
+
+    calculate();
+
+    CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
+
+    // Zooming in truncates any positions past current history index
+    m_calc_history.resize(m_calc_history_idx);
+    m_calc_history.push_back( pos );
+    m_calc_history_idx++;
+
+    ui->buttonTop->setDisabled(false);
+    ui->buttonNext->setDisabled(true);
+    ui->buttonPrev->setDisabled(false);
+    ui->buttonZoomOut->setDisabled(false);
+}
+
+/**
+ * @brief Zooms out of current image by a factor of 2 (public slot)
+ *
+ * Zooming out, like zooming in, truncates the current position history.
+ * Zoom out past top position is disallowed.
+ */
+void
+MainWindow::zoomOut()
+{
+    double dx = (m_calc_params.x2 - m_calc_params.x1)/2;
+    double dy = (m_calc_params.y2 - m_calc_params.y1)/2;
+
+    if ( m_calc_params.x1 - dx <= -2 || m_calc_params.y1 - dy <= -2 || m_calc_params.x2 + dx >= 2 || m_calc_params.y2 + dy >= 2 )
+    {
+        m_calc_history.resize(0);
+        m_calc_history_idx = 0;
+
+        zoomTop();
+
+        return;
+    }
+
+    m_calc_params.x1 -= dx;
+    m_calc_params.y1 -= dy;
+    m_calc_params.x2 += dx;
+    m_calc_params.y2 += dy;
+
+    calculate();
+
+    CalcPos pos = {m_calc_params.x1,m_calc_params.y1,m_calc_params.x2,m_calc_params.y2};
+
+    // Zooming out backs-up history and truncates any positions past current history index
+    m_calc_history.resize(m_calc_history_idx);
+    m_calc_history.back() = pos;
+
+    //ui->buttonTop->setDisabled(false);
+    ui->buttonNext->setDisabled(true);
+    //ui->buttonPrev->setDisabled(false);
 }
 
 /**
@@ -966,6 +1049,8 @@ MainWindow::prev()
         {
             ui->buttonTop->setDisabled(true);
             ui->buttonPrev->setDisabled(true);
+            ui->buttonZoomOut->setDisabled(true);
+
             m_calc_params.x1 = -2;
             m_calc_params.y1 = -2;
             m_calc_params.x2 = 2;
@@ -994,6 +1079,7 @@ MainWindow::next()
         ui->buttonTop->setDisabled( false );
         ui->buttonPrev->setDisabled( false );
         ui->buttonNext->setDisabled( m_calc_history_idx >= m_calc_history.size() );
+        ui->buttonZoomOut->setDisabled( false );
 
         const CalcPos & pos = m_calc_history[m_calc_history_idx-1];
         m_calc_params.x1 = pos.x1;
@@ -1030,6 +1116,7 @@ MainWindow::zoomIn( const QRectF & rect )
     ui->buttonTop->setDisabled(false);
     ui->buttonNext->setDisabled(true);
     ui->buttonPrev->setDisabled(false);
+    ui->buttonZoomOut->setDisabled(false);
 }
 
 

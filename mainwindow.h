@@ -30,6 +30,8 @@ public slots:
     void closeEvent( QCloseEvent *event );
     void calculate();
     void zoomTop();
+    void zoomIn();
+    void zoomOut();
     void prev();
     void next();
     void aspectChange( int index );
