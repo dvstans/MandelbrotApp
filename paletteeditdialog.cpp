@@ -1,3 +1,5 @@
+#include <iostream>
+#include <cmath>
 #include <QLabel>
 #include <QLineEdit>
 #include <QSpinBox>
@@ -9,6 +11,9 @@
 
 using namespace std;
 
+#define HSV_SLIDER_VAL_MAX 400
+#define HSV_SLIDER_SAT_MAX 400
+
 PaletteEditDialog::PaletteEditDialog( QWidget *a_parent, IPaletteEditObserver & a_observer ):
     QDialog(a_parent),
     m_observer( a_observer ),
@@ -17,7 +22,8 @@ PaletteEditDialog::PaletteEditDialog( QWidget *a_parent, IPaletteEditObserver & 
     m_geometry_set(false),
     m_cur_frame(0),
     m_ignore_color_slider_sig(false),
-    m_ignore_color_change_sig(false)
+    m_ignore_color_change_sig(false),
+    m_use_hsv(false)
 {
     ui->setupUi(this);
 }
@@ -226,7 +232,17 @@ PaletteEditDialog::updateRedValue( int a_value )
 {
     if ( m_cur_frame && !m_ignore_color_slider_sig  )
     {
-        uint32_t color = (a_value << 16) | (ui->sliderGreen->value() << 8) | ui->sliderBlue->value();
+        uint32_t color;
+
+        if ( m_use_hsv )
+        {
+            color = HSVToRGB( a_value, ui->sliderGreen->value(), ui->sliderBlue->value());
+        }
+        else
+        {
+            color = (a_value << 16) | (ui->sliderGreen->value() << 8) | ui->sliderBlue->value();
+        }
+
         setColor( m_cur_frame, color );
         paletteChanged();
     }
@@ -238,7 +254,17 @@ PaletteEditDialog::updateGreenValue( int a_value )
 {
     if ( m_cur_frame && !m_ignore_color_slider_sig  )
     {
-        uint32_t color = (ui->sliderRed->value() << 16) | (a_value << 8) | ui->sliderBlue->value();
+        uint32_t color;
+
+        if ( m_use_hsv )
+        {
+            color = HSVToRGB( ui->sliderRed->value(), a_value, ui->sliderBlue->value());
+        }
+        else
+        {
+            color = (ui->sliderRed->value() << 16) | (a_value << 8) | ui->sliderBlue->value();
+        }
+
         setColor( m_cur_frame, color );
         paletteChanged();
     }
@@ -248,9 +274,25 @@ PaletteEditDialog::updateGreenValue( int a_value )
 void
 PaletteEditDialog::updateBlueValue( int a_value )
 {
+    cout << "updateBlueValue" << endl;
+
     if ( m_cur_frame && !m_ignore_color_slider_sig )
     {
-        uint32_t color = (ui->sliderRed->value() << 16) | (ui->sliderGreen->value() << 8) | a_value;
+        uint32_t color;
+
+        if ( m_use_hsv )
+        {
+            cout << "hsv" << endl;
+            color = HSVToRGB( ui->sliderRed->value(), ui->sliderGreen->value(), a_value);
+        }
+        else
+        {
+            cout << "rgb" << endl;
+            color = (ui->sliderRed->value() << 16) | (ui->sliderGreen->value() << 8) | a_value;
+        }
+
+        cout << "color " << hex << color << endl;
+
         setColor( m_cur_frame, color );
         paletteChanged();
     }
@@ -308,6 +350,43 @@ PaletteEditDialog::repeatStateChanged( int a_state )
     {
         m_pal_info.repeat = ( a_state == Qt::Checked ? true : false );
         paletteChanged();
+    }
+}
+
+
+void
+PaletteEditDialog::hsvStateChanged( int a_state )
+{
+    bool new_state = ( a_state == Qt::Checked ? true : false );
+    if ( new_state != m_use_hsv )
+    {
+        m_ignore_color_slider_sig = true;
+        m_use_hsv = new_state;
+
+        if ( m_use_hsv )
+        {
+            ui->labelRed->setText("H");
+            ui->labelGreen->setText("S");
+            ui->labelBlue->setText("V");
+            ui->sliderRed->setMaximum( 360 );
+            ui->sliderGreen->setMaximum( HSV_SLIDER_SAT_MAX );
+            ui->sliderBlue->setMaximum( HSV_SLIDER_VAL_MAX );
+        }
+        else
+        {
+            ui->labelRed->setText("R");
+            ui->labelGreen->setText("G");
+            ui->labelBlue->setText("B");
+            ui->sliderRed->setMaximum( 255 );
+            ui->sliderGreen->setMaximum( 255 );
+            ui->sliderBlue->setMaximum( 255 );
+        }
+
+        m_ignore_color_slider_sig = false;
+
+        cout << "color " << hex << m_pal_info.color_bands[getColorFrameIndex()].color << endl;
+
+        setColorSliders( m_pal_info.color_bands[getColorFrameIndex()].color );
     }
 }
 
@@ -470,9 +549,26 @@ void
 PaletteEditDialog::setColorSliders( uint32_t a_color )
 {
     m_ignore_color_slider_sig = true;
-    ui->sliderRed->setValue(( a_color >> 16 ) & 0xFF );
-    ui->sliderGreen->setValue(( a_color >> 8 ) & 0xFF );
-    ui->sliderBlue->setValue( a_color & 0xFF );
+
+    if ( m_use_hsv )
+    {
+        int r = ( a_color >> 16 ) & 0xFF,
+            g = ( a_color >> 8 ) & 0xFF,
+            b = a_color & 0xFF;
+
+        HSV_t hsv = RGBToHSV( r, g, b );
+
+        ui->sliderRed->setValue( hsv.h );
+        ui->sliderGreen->setValue( hsv.s * HSV_SLIDER_SAT_MAX );
+        ui->sliderBlue->setValue( hsv.v * HSV_SLIDER_VAL_MAX);
+    }
+    else
+    {
+        ui->sliderRed->setValue(( a_color >> 16 ) & 0xFF );
+        ui->sliderGreen->setValue(( a_color >> 8 ) & 0xFF );
+        ui->sliderBlue->setValue( a_color & 0xFF );
+    }
+
     m_ignore_color_slider_sig = false;
 }
 
@@ -520,6 +616,86 @@ PaletteEditDialog::getColorFrameIndex( QFrame * a_frame )
     return ui->frameControls->layout()->indexOf( a_frame?a_frame:m_cur_frame );
 }
 
+PaletteEditDialog::HSV_t
+PaletteEditDialog::RGBToHSV( uint16_t r, uint16_t g, uint16_t b )
+{
+    double  cmax = max({r,g,b}),
+            cmin = min({r,g,b}),
+            delta = cmax - cmin,
+            h1;
+
+    HSV_t hsv;
+
+    if ( cmax == cmin ) // Ok b/c initialized with integers
+    {
+        hsv.h = 0;
+    }
+    else
+    {
+        if ( r == cmax )
+        {
+            h1 = (double)( g - b )/delta;
+            if ( h1 < 0 )
+                h1 += 6;
+        }
+        else if ( g == cmax )
+        {
+            h1 = (double)( b - r )/delta + 2;
+        }
+        else
+        {
+            h1 = (double)( r - g )/delta + 4;
+        }
+
+        hsv.h = 60.0 * h1;
+    }
+
+    hsv.s = cmax > 0 ? delta/cmax : 0;
+    hsv.v = cmax/255.0;
+
+    return hsv;
+}
+
+uint32_t
+PaletteEditDialog::HSVToRGB( uint16_t h, uint16_t s, uint16_t v)
+{
+    //uint8_t r, g, b;
+    double  c = v * s / ((double)HSV_SLIDER_VAL_MAX * HSV_SLIDER_SAT_MAX ),
+            x = c * (1 - fabs(fmod(h/60.0, 2.0) - 1)),
+            m = ((double)v/HSV_SLIDER_VAL_MAX) - c,
+            r, g, b;
+
+    if ( h <= 60 )
+    {
+        r = c;  g = x;  b = 0;
+    }
+    else if ( h <= 120 )
+    {
+        r = x;  g = c;  b = 0;
+    }
+    else if ( h <= 180 )
+    {
+        r = 0;  g = c;  b = x;
+    }
+    else if ( h <= 240 )
+    {
+        r = 0;  g = x;  b = c;
+    }
+    else if ( h <= 300 )
+    {
+        r = x;  g = 0;  b = c;
+    }
+    else
+    {
+        r = c;  g = 0;  b = x;
+    }
+
+    uint8_t r2 = (r + m)*255,
+            g2 = (g + m)*255,
+            b2 = (b + m)*255;
+
+    return ( r2 << 16 ) | ( g2 << 8 ) | b2;
+}
 
 bool
 PaletteEditDialog::EventHandler::eventFilter( QObject * a_object, QEvent *a_event )

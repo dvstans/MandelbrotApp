@@ -48,12 +48,20 @@ public slots:
     void widthValueChanged( int value );
     void modeIndexChanged( int value );
     void repeatStateChanged( int state );
+    void hsvStateChanged( int state );
     void paletteNew();
     void paletteDuplicate();
     void paletteSave();
     void paletteDelete();
 
 private:
+    struct HSV_t
+    {
+        double h; // 0 - 360
+        double s; // 0 -> 1
+        double v; // 0 -> 1
+    };
+
     class EventHandler : public QObject
     {
     public:
@@ -68,20 +76,22 @@ private:
     };
 
 
-    void    updateWindowTitle();
-    void    paletteChanged();
-    void    closeEvent( QCloseEvent *event );
-    void    insertColorControls( int index );
-    QFrame* getColorControl( int index );
-    void    setColor( int index, const PaletteGenerator::ColorBand & band, bool update_palette = true );
-    void    setColor( QFrame * frame, const PaletteGenerator::ColorBand & band, bool update_palette = true );
-    void    setColor( QFrame * frame, uint32_t color, bool update_palette = true );
-    void    setColorSwatch( QFrame * frame, uint32_t color );
-    void    swapColors( int index1, int index2 );
-    void    setColorSliders( uint32_t color );
-    void    setFocus( QFrame * a_frame, bool force_refresh = false );
-    void    setFocus( int index, bool force_refresh = false );
-    int     getColorFrameIndex( QFrame * frame = nullptr );
+    void        updateWindowTitle();
+    void        paletteChanged();
+    void        closeEvent( QCloseEvent *event );
+    void        insertColorControls( int index );
+    QFrame*     getColorControl( int index );
+    void        setColor( int index, const PaletteGenerator::ColorBand & band, bool update_palette = true );
+    void        setColor( QFrame * frame, const PaletteGenerator::ColorBand & band, bool update_palette = true );
+    void        setColor( QFrame * frame, uint32_t color, bool update_palette = true );
+    void        setColorSwatch( QFrame * frame, uint32_t color );
+    void        swapColors( int index1, int index2 );
+    void        setColorSliders( uint32_t color );
+    void        setFocus( QFrame * a_frame, bool force_refresh = false );
+    void        setFocus( int index, bool force_refresh = false );
+    int         getColorFrameIndex( QFrame * frame = nullptr );
+    HSV_t       RGBToHSV( uint16_t r, uint16_t g, uint16_t b );
+    uint32_t    HSVToRGB( uint16_t h, uint16_t s, uint16_t v );
 
     IPaletteEditObserver &  m_observer;
     PaletteInfo             m_pal_info;
@@ -92,6 +102,7 @@ private:
     QFrame *                m_cur_frame;
     bool                    m_ignore_color_slider_sig;
     bool                    m_ignore_color_change_sig;
+    bool                    m_use_hsv;
 
     friend class EventHandler;
 };

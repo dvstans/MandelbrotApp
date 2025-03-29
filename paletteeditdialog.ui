@@ -140,7 +140,7 @@
        <number>4</number>
       </property>
       <item row="0" column="0">
-       <widget class="QLabel" name="label">
+       <widget class="QLabel" name="labelRed">
         <property name="text">
          <string>R</string>
         </property>
@@ -160,7 +160,7 @@
        </widget>
       </item>
       <item row="1" column="0">
-       <widget class="QLabel" name="label_2">
+       <widget class="QLabel" name="labelGreen">
         <property name="text">
          <string>G</string>
         </property>
@@ -180,7 +180,7 @@
        </widget>
       </item>
       <item row="2" column="0">
-       <widget class="QLabel" name="label_3">
+       <widget class="QLabel" name="labelBlue">
         <property name="text">
          <string>B</string>
         </property>
@@ -226,6 +226,26 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
+      <item>
+       <spacer name="horizontalSpacer_3">
+        <property name="orientation">
+         <enum>Qt::Orientation::Horizontal</enum>
+        </property>
+        <property name="sizeHint" stdset="0">
+         <size>
+          <width>40</width>
+          <height>20</height>
+         </size>
+        </property>
+       </spacer>
+      </item>
+      <item>
+       <widget class="QCheckBox" name="checkBoxHSV">
+        <property name="text">
+         <string>HSV</string>
+        </property>
+       </widget>
+      </item>
       <item>
        <spacer name="horizontalSpacer_2">
         <property name="orientation">
@@ -589,6 +609,22 @@
     </hint>
    </hints>
   </connection>
+  <connection>
+   <sender>checkBoxHSV</sender>
+   <signal>stateChanged(int)</signal>
+   <receiver>PaletteEditDialog</receiver>
+   <slot>hsvStateChanged(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>73</x>
+     <y>473</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>121</x>
+     <y>258</y>
+    </hint>
+   </hints>
+  </connection>
  </connections>
  <slots>
   <slot>hideWithPos()</slot>
@@ -604,5 +640,6 @@
   <slot>paletteNew()</slot>
   <slot>paletteDuplicate()</slot>
   <slot>repeatStateChanged(int)</slot>
+  <slot>hsvStateChanged(int)</slot>
  </slots>
 </ui>
