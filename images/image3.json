@@ -1,0 +1,28 @@
+{
+  "x1":"-1.369081040372857",
+  "y1":"0.0066456744923695859",
+  "x2":"-1.3690701555182088",
+  "y2":"0.0066650138686664842",
+  "iter_mx":25000,
+  "img_width":1441,
+  "img_height":2560,
+  "th_cnt":20,
+  "ss":3,
+  "time_ms":1244,
+  "palette":{
+    "name":"Embers",
+    "scale":11,
+    "offset":27,
+    "repeat":true,
+    "colors":[
+      {"color":4283241216, "width":12, "mode":1},
+      {"color":0, "width":5, "mode":1},
+      {"color":4281008128, "width":5, "mode":1},
+      {"color":0, "width":5, "mode":1},
+      {"color":4294914560, "width":5, "mode":1},
+      {"color":0, "width":5, "mode":1},
+      {"color":4294945322, "width":5, "mode":1},
+      {"color":0, "width":5, "mode":1}
+    ]
+  }
+}

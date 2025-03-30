@@ -1,0 +1,25 @@
+{
+  "x1":"-1.3681943030592223",
+  "y1":"0.0061921034206116063",
+  "x2":"-1.3681897384435067",
+  "y2":"0.006194677832168787",
+  "iter_mx":5000,
+  "img_width":2560,
+  "img_height":1443,
+  "th_cnt":20,
+  "ss":3,
+  "time_ms":1595,
+  "palette":{
+    "name":"Parchment",
+    "scale":13,
+    "offset":65,
+    "repeat":true,
+    "colors":[
+      {"color":4291471725, "width":5, "mode":1},
+      {"color":4285677620, "width":5, "mode":1},
+      {"color":0, "width":5, "mode":1},
+      {"color":4292857996, "width":7, "mode":1},
+      {"color":0, "width":5, "mode":1}
+    ]
+  }
+}
