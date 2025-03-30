@@ -8,7 +8,7 @@ CONFIG += c++17
 # In order to do so, uncomment the following line.
 #DEFINES += QT_DISABLE_DEPRECATED_BEFORE=0x060000    # disables all the APIs deprecated before Qt 6.0.0
 
-VERSION = 0.1.1
+VERSION = 0.2.2
 DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 
 QMAKE_CXXFLAGS += -O2
@@ -18,15 +18,15 @@ SOURCES += \
     mainwindow.cpp \
     mandelbrotcalc.cpp \
     mandelbrotviewer.cpp \
-    palette.cpp \
-    paletteeditdialog.cpp
+    paletteeditdialog.cpp \
+    palettegenerator.cpp
 
 HEADERS += \
     mainwindow.h \
     mandelbrotcalc.h \
     mandelbrotviewer.h \
-    palette.h \
     paletteeditdialog.h \
+    palettegenerator.h \
     paletteinfo.h
 
 FORMS += \

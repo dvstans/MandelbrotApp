@@ -1,13 +1,21 @@
 #include<cmath>
-#include "palette.h"
+#include "palettegenerator.h"
 
 using namespace std;
 
+/**
+ * @brief PaletteGenerator constructor
+ */
 PaletteGenerator::PaletteGenerator():
     m_palette_size(0),
     m_scale(1)
 {}
 
+/**
+ * @brief Sets the color bands for the palette generator
+ * @param a_bands - Vector of ColorBand structs
+ * @param a_repeat - Repeat mode (true = repeats)
+ */
 void
 PaletteGenerator::setPaletteColorBands( const ColorBands & a_bands, bool a_repeat )
 {
@@ -16,6 +24,7 @@ PaletteGenerator::setPaletteColorBands( const ColorBands & a_bands, bool a_repea
     m_palette_size = 0;
     m_repeat = a_repeat;
 
+    // Calculate size of rendered palette
     for ( ColorBands::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
     {
         if ( !m_repeat && cb == m_bands.end() - 1)
@@ -32,9 +41,15 @@ PaletteGenerator::setPaletteColorBands( const ColorBands & a_bands, bool a_repea
     generatePalette();
 }
 
+/**
+ * @brief Renders the palette into a flat vector of RGB color
+ * @param a_scale - Optional scaling factor for palette
+ * @return Const reference to generated palette vector
+ */
 const PaletteGenerator::Palette &
 PaletteGenerator::renderPalette( uint8_t a_scale )
 {
+    // Generate palette if not initialized or scale changes
     if ( m_palette.size() == 0 || a_scale != m_scale )
     {
         m_scale = a_scale;
@@ -45,6 +60,12 @@ PaletteGenerator::renderPalette( uint8_t a_scale )
     return m_palette;
 }
 
+/**
+ * @brief Generates the palette into an internal buffer
+ *
+ * This method generates a flat color palette based on the color bands, scale,
+ * and repeat mode of the specified palette.
+ */
 void
 PaletteGenerator::generatePalette()
 {
@@ -58,8 +79,10 @@ PaletteGenerator::generatePalette()
     uint8_t r2, g2, b2;
     double  dr,dg,db;
 
+    // Iterate through color bands
     for ( ColorBands::const_iterator cb = m_bands.begin(); cb != m_bands.end(); cb++ )
     {
+        // Special processing for last color band in non-repeating palettes
         if ( !m_repeat && cb == m_bands.end() - 1)
         {
             *color++ = cb->color;
@@ -70,6 +93,7 @@ PaletteGenerator::generatePalette()
 
         if ( cb->mode == CM_LINEAR )
         {
+            // Blend current color band with next (or first)
             r1 = (cb->color >> 16) & 0xFF;
             g1 = (cb->color >> 8) & 0xFF;
             b1 = cb->color & 0xFF;
@@ -91,6 +115,7 @@ PaletteGenerator::generatePalette()
             dg = (double)(g2 - g1)/w;
             db = (double)(b2 - b1)/w;
 
+            // Interpolate color across band
             for ( i = 0; i < w; i++ )
             {
                 r = (uint8_t)round(r1 + i*dr);
@@ -101,6 +126,7 @@ PaletteGenerator::generatePalette()
         }
         else // CM_FLAT
         {
+            // Fill palette with same color for flat color bands
             for ( i = 0; i < w; i++ )
             {
                 *color++ = cb->color;

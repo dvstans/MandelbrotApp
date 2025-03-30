@@ -4,6 +4,12 @@
 #include <QStyleFactory>
 #include <QFile>
 
+/**
+ * @brief Program entry point
+ * @param argc - Argument count
+ * @param argv - Arguments
+ * @return Exit code from QApplication::exec
+ */
 int main(int argc, char *argv[])
 {
     QCoreApplication::setOrganizationName("DVStansberry");

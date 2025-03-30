@@ -74,7 +74,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="buttonTop">
+        <widget class="QToolButton" name="buttonViewTop">
          <property name="toolTip">
           <string>Go to top-level position</string>
          </property>
@@ -87,7 +87,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="buttonPrev">
+        <widget class="QToolButton" name="buttonViewPrev">
          <property name="toolTip">
           <string>Go to previous position</string>
          </property>
@@ -100,7 +100,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="buttonNext">
+        <widget class="QToolButton" name="buttonViewNext">
          <property name="toolTip">
           <string>Go to next position</string>
          </property>
@@ -303,7 +303,7 @@
         </spacer>
        </item>
        <item>
-        <widget class="QToolButton" name="buttonLoad">
+        <widget class="QToolButton" name="buttonImageLoad">
          <property name="toolTip">
           <string>Load image from file</string>
          </property>
@@ -316,7 +316,7 @@
         </widget>
        </item>
        <item>
-        <widget class="QToolButton" name="buttonSave">
+        <widget class="QToolButton" name="buttonImageSave">
          <property name="toolTip">
           <string>Save current image to file</string>
          </property>
@@ -520,10 +520,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonSave</sender>
+   <sender>buttonImageSave</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>saveImage()</slot>
+   <slot>imageSave()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>613</x>
@@ -536,10 +536,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonTop</sender>
+   <sender>buttonViewTop</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>zoomTop()</slot>
+   <slot>viewTop()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>66</x>
@@ -552,10 +552,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonPrev</sender>
+   <sender>buttonViewPrev</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>prev()</slot>
+   <slot>viewPrev()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>105</x>
@@ -568,10 +568,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonNext</sender>
+   <sender>buttonViewNext</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>next()</slot>
+   <slot>viewNext()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>147</x>
@@ -616,10 +616,10 @@
    </hints>
   </connection>
   <connection>
-   <sender>buttonLoad</sender>
+   <sender>buttonImageLoad</sender>
    <signal>clicked()</signal>
    <receiver>MainWindow</receiver>
-   <slot>loadImage()</slot>
+   <slot>imageLoad()</slot>
    <hints>
     <hint type="sourcelabel">
      <x>838</x>
@@ -668,14 +668,14 @@
   <slot>calculate()</slot>
   <slot>paletteOffsetSliderChanged(int)</slot>
   <slot>paletteScaleSliderChanged(int)</slot>
-  <slot>saveImage()</slot>
-  <slot>zoomTop()</slot>
-  <slot>prev()</slot>
-  <slot>next()</slot>
+  <slot>imageSave()</slot>
+  <slot>viewTop()</slot>
+  <slot>viewPrev()</slot>
+  <slot>viewNext()</slot>
   <slot>aspectChange(int)</slot>
   <slot>paletteSelect(QString)</slot>
   <slot>paletteEdit()</slot>
-  <slot>loadImage()</slot>
+  <slot>imageLoad()</slot>
   <slot>zoomOut()</slot>
   <slot>zoomIn()</slot>
  </slots>
