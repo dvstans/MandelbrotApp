@@ -61,13 +61,29 @@ public:
         uint64_t            time_ms;    // Calc time in milliseconds
     };
 
+    class IObserver
+    {
+    public:
+        virtual void calcProgress( int ) = 0;
+        virtual void calcCompleted( CalcResult ) = 0;
+        virtual void calcCancelled() = 0;
+    };
+
     MandelbrotCalc( bool use_thread_pool = false, uint8_t initial_pool_size = 0 );
     ~MandelbrotCalc();
 
-    CalcResult  calculate( CalcParams & a_params );
-    void        stop();
+    //CalcResult  calculate( CalcParams & a_params );
+    void        calculate( IObserver & a_observer, CalcParams & a_params );
+    bool        isCalculating();
+    void        stopCalculation();
+    void        stopWorkerThreads();
 
 private:
+    std::thread*                m_control_thread;   // Control thread to manage workers
+    std::mutex                  m_control_mutex;    // Mutex used to protect control thread cvar
+    std::condition_variable     m_control_cvar;     // Cvar used to signal control thread to start
+    CalcParams                  m_calc_params;
+    IObserver *                 m_observer;
     bool                        m_use_thread_pool;  // Use thread pool flag
     uint8_t                     m_worker_count;     // Current desired number (target) of running threads
     std::vector<std::thread*>   m_workers;          // Worker thread container
@@ -83,6 +99,7 @@ private:
     double                      m_delta;            // Real delta between pixels
     bool                        m_main_waiting;     // Flag to indicate main thread is waiting to be signalled
 
+    void controlThread();
     void workerThread( uint8_t id );
 };
 

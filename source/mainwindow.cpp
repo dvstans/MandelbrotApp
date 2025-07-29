@@ -194,19 +194,27 @@ MainWindow::aspectChange( int a_index )
 }
 
 /**
- * @brief Slot to receive image calculate UI signals
+ * @brief Slot to receive image calculate / stop UI signals
  *
  * This slot is also use internally to recalculate the image when needed.
  */
 void
 MainWindow::calculate()
 {
-    // Disable calc button while calculation runs
     ui->buttonCalc->setDisabled(true);
+    //runCalculate();
 
     // Start calculation in a different processing thread to free UI thread
-    QApplication::processEvents(); // Force UI to update
-    QTimer::singleShot(0, this, &MainWindow::runCalculate );
+    //QApplication::processEvents(); // Force UI to update
+    //QTimer::singleShot(0, this, &MainWindow::runCalculate );
+
+    m_calc_ss = ui->spinBoxSuperSample->value();
+    m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
+    m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
+    m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
+
+    // Returns immediately, observer notified on progress/completion
+    m_calc.calculate( *this, m_calc_params );
 }
 
 /**
@@ -959,7 +967,7 @@ MainWindow::inputPaletteName( const QString & a_title )
  * This method is run separately from the calculate slot to prevent the
  * UI from hanging for the duration of the calculation.
  */
-void
+/*void
 MainWindow::runCalculate()
 {
     m_calc_ss = ui->spinBoxSuperSample->value();
@@ -968,7 +976,23 @@ MainWindow::runCalculate()
     m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
     m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
 
-    m_calc_result = m_calc.calculate( m_calc_params );
+    //m_calc_result = m_calc.calculate( m_calc_params );
+    m_calc.calculate( *this, m_calc_params );
+}*/
+
+// MandelbrotCalc::IObserver methods
+void
+MainWindow::calcProgress( int a_progress )
+{
+    cout << " " << a_progress << endl;
+}
+
+void
+MainWindow::calcCompleted( MandelbrotCalc::CalcResult a_result )
+{
+    cout << "calc done" << endl;
+
+    m_calc_result = a_result;
 
     imageDraw();
 
@@ -987,6 +1011,13 @@ MainWindow::runCalculate()
     ui->buttonCalc->setDisabled(false);
     ui->buttonImageSave->setDisabled(false);
 }
+
+void
+MainWindow::calcCancelled()
+{
+    cout << "calc cancelled" << endl;
+}
+
 
 /**
  * @brief Deletes specified palette from app settings

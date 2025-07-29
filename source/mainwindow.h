@@ -31,7 +31,7 @@ QT_END_NAMESPACE
  * which inherits from the IPaletteEditObserver interface to receive callbacks
  * from the palette edit dialog.
  */
-class MainWindow : public QMainWindow, IMandelbrotViewerObserver, IPaletteEditObserver
+class MainWindow : public QMainWindow, IMandelbrotViewerObserver, IPaletteEditObserver, MandelbrotCalc::IObserver
 {
     Q_OBJECT
 
@@ -78,6 +78,11 @@ private:
     void    paletteDuplicate( const PaletteInfo & palette_info );
     void    paletteNew();
     bool    paletteSave( PaletteInfo & palette_info );
+
+    // MandelbrotCalc::IObserver methods
+    void calcProgress( int a_progress );
+    void calcCompleted( MandelbrotCalc::CalcResult a_result );
+    void calcCancelled();
 
     // JSON helper methods
     bool    jsonReadBool( const QJsonObject & obj, const QString & key );

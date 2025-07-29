@@ -15,6 +15,7 @@ typedef std::chrono::high_resolution_clock Clock;
  * @param a_initial_pool_size - Initial thread pool size
  */
 MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_size ):
+    m_observer(0),
     m_use_thread_pool( a_use_thread_pool ),
     m_worker_count(0),
     m_data_cur_size(0),
@@ -30,9 +31,9 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
         if ( a_initial_pool_size )
         {
             // Spin up worker threads in pool
-            unique_lock lock(m_worker_mutex);
+            unique_lock lock( m_worker_mutex );
 
-            m_worker_count = a_initial_pool_size;
+            m_worker_count = 1; //a_initial_pool_size;
             m_workers.reserve( m_worker_count );
 
             for ( uint8_t i = 0; i < m_worker_count; i++ )
@@ -41,6 +42,9 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
             }
         }
     }
+
+    unique_lock lock( m_control_mutex );
+    m_control_thread = new thread( &MandelbrotCalc::controlThread, this );
 }
 
 /**
@@ -49,13 +53,210 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
 MandelbrotCalc::~MandelbrotCalc()
 {
     // Stop threads
-    stop();
+    stopWorkerThreads();
 
     // Delete image buffer
     if ( m_data )
     {
         delete[] m_data;
     }
+}
+
+
+/**
+ * @brief Starts the Mandelbrot set calculation based on given parameters
+ * @param a_observer - Object to receive progress notifications
+ * @param a_params - Calculation parameters
+ *
+ * This method validate parameters and starts the calculation process asynchronously.
+ * The observer will receive notification of progress, cancellation, or completion.
+ */
+void
+MandelbrotCalc::calculate( IObserver & a_observer, CalcParams & a_params )
+{
+    // Validate parameters
+
+    if ( a_params.res == 0 )
+    {
+        throw out_of_range("Invalid image resolution parameter: must be greater than zero.");
+    }
+
+    if ( a_params.iter_mx == 0 )
+    {
+        throw out_of_range("Invalid max iterations parameter: must be greater than zero.");
+    }
+
+    // Control thread holds this mutex for duration of calculation
+    lock_guard lock( m_control_mutex );
+
+    m_calc_params = a_params;
+    m_observer = &a_observer;
+    m_control_cvar.notify_one();
+}
+
+void
+MandelbrotCalc::controlThread()
+{
+    unique_lock ctrl_lock( m_control_mutex, defer_lock );
+
+    while( 1 )
+    {
+        ctrl_lock.lock();
+
+        while( m_observer == 0 )
+        {
+            m_control_cvar.wait(ctrl_lock);
+        }
+
+        // Start timer
+        auto t1 = Clock::now();
+
+        CalcResult result;
+
+        result.x1 = m_calc_params.x1;
+        result.y1 = m_calc_params.y1;
+        result.x2 = m_calc_params.x2;
+        result.y2 = m_calc_params.y2;
+        result.th_cnt = m_calc_params.th_cnt;
+        result.iter_mx = m_calc_params.iter_mx;
+
+        // Adjust bounding rect if needed
+        if ( result.x1 > result.x2 )
+        {
+            swap( result.x1, result.x2 );
+        }
+
+        if ( result.y1 > result.y2 )
+        {
+            swap( result.y1, result.y2 );
+        }
+
+        // Calculate actual image size
+        double w = result.x2 - result.x1;
+        double h = result.y2 - result.y1;
+
+        if ( w > h )
+        {
+            m_delta = w/(m_calc_params.res - 1);
+            result.img_width = m_calc_params.res;
+            result.img_height = (uint16_t)(floor(h/m_delta) + 1);
+        }
+        else
+        {
+            m_delta = h/(m_calc_params.res - 1);
+            result.img_width = (uint16_t)(floor(w/m_delta) + 1);
+            result.img_height = m_calc_params.res;
+        }
+
+        unique_lock lock( m_worker_mutex );
+
+        // Prepare internal parameters
+        m_x1 = result.x1;
+        m_y1 = result.y1;
+        m_mxi = m_calc_params.iter_mx;
+        m_w = result.img_width;
+
+        // Resize internal buffer if size changes
+        uint32_t data_sz = result.img_width  * result.img_height;
+        if ( m_data_cur_size != data_sz )
+        {
+            if ( m_data )
+            {
+                delete[] m_data;
+            }
+            m_data = new uint16_t[data_sz];
+            m_data_cur_size = data_sz;
+        }
+
+        // Note: most threads will be waiting on their cvar, but new threads may not make it to
+        // the cvar before the "start work" notify is signalled, thus new workers will check if
+        // there is work to do BEFORE waiting on initial notify. This avoids the race condition
+        // that could cause them to become stuck on the wait after the signal is sent. Thus the
+        // work (m_y_cur) must be set before any workers are signalled.
+
+        // Set work remaining (first line to process)
+        atomic_store( &m_y_cur, result.img_height - 1 );
+
+        // Adjust worker threads if needed
+        if( m_calc_params.th_cnt > m_workers.size() )
+        {
+            uint8_t i = m_worker_count;
+
+            m_worker_count = m_calc_params.th_cnt;
+            m_workers.reserve( m_calc_params.th_cnt );
+
+            for ( ; i < m_calc_params.th_cnt; i++ )
+            {
+                m_workers.push_back( new thread( &MandelbrotCalc::workerThread, this, i ));
+            }
+        }
+        else if ( m_calc_params.th_cnt < m_workers.size() )
+        {
+            vector<thread*>::iterator t = m_workers.begin() + m_calc_params.th_cnt;
+
+            // Set new desired worker count, notify workers
+            m_worker_count = m_calc_params.th_cnt;
+            m_worker_cvar.notify_all();
+            lock.unlock();
+
+            // Wait for pruned worker threads to stop, then delete
+            for ( ; t != m_workers.end(); t++ )
+            {
+                (*t)->join();
+                delete *t;
+            }
+
+            lock.lock();
+            m_workers.resize(m_worker_count);
+        }
+
+
+        // Start workers
+        m_worker_cvar.notify_all();
+
+        // Wait for last worker to complete
+        // Note that for small/simple images, some workers may not contribute to the calculation
+        m_main_waiting = true;
+        while( atomic_load( &m_y_cur ) > -m_worker_count )
+        {
+            m_worker_cvar.wait(lock);
+        }
+        m_main_waiting = false;
+
+        lock.unlock();
+
+        // Stop timer
+        auto t2 = Clock::now();
+
+        result.img_data = m_data;
+        result.time_ms = chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(); // time msec;
+
+        // Notify observer of completion
+        m_observer->calcCompleted( result );
+
+        // Clear observer and release ctrl lock
+        m_observer = 0;
+        ctrl_lock.unlock();
+    }
+}
+
+
+/**
+ * @brief Determine if calculation is in progress
+ * @return True if calculation running; false otherwise
+ */
+bool
+MandelbrotCalc::isCalculating()
+{
+    return atomic_load( &m_y_cur ) >= 0;
+}
+
+
+void
+MandelbrotCalc::stopCalculation()
+{
+    // Set no work indicated
+    atomic_store( &m_y_cur, -1 );
 }
 
 /**
@@ -66,7 +267,7 @@ MandelbrotCalc::~MandelbrotCalc()
  * call.
  */
 void
-MandelbrotCalc::stop()
+MandelbrotCalc::stopWorkerThreads()
 {
     if ( m_workers.size() )
     {
@@ -91,151 +292,6 @@ MandelbrotCalc::stop()
     }
 }
 
-/**
- * @brief Calculates the Mandelbrot set based on given parameters
- * @param a_params - Calculation parameters
- * @return A CalcResult instance containing internal image buffer pointer and various metrics
- */
-MandelbrotCalc::CalcResult
-MandelbrotCalc::calculate( CalcParams & a_params )
-{
-    // Start timer
-    auto t1 = Clock::now();
-
-    CalcResult result;
-
-    // Validate parameters
-
-    if ( a_params.res == 0 )
-    {
-        throw out_of_range("Invalid image resolution parameter: must be greater than zero.");
-    }
-
-    if ( a_params.iter_mx == 0 )
-    {
-        throw out_of_range("Invalid max iterations parameter: must be greater than zero.");
-    }
-
-    result.x1 = a_params.x1;
-    result.y1 = a_params.y1;
-    result.x2 = a_params.x2;
-    result.y2 = a_params.y2;
-    result.th_cnt = a_params.th_cnt;
-    result.iter_mx = a_params.iter_mx;
-
-    // Adjust bounding rect if needed
-    if ( result.x1 > result.x2 )
-    {
-        swap( result.x1, result.x2 );
-    }
-
-    if ( result.y1 > result.y2 )
-    {
-        swap( result.y1, result.y2 );
-    }
-
-    // Calculate actual image size
-    double w = result.x2 - result.x1;
-    double h = result.y2 - result.y1;
-
-    if ( w > h )
-    {
-        m_delta = w/(a_params.res - 1);
-        result.img_width = a_params.res;
-        result.img_height = (uint16_t)(floor(h/m_delta) + 1);
-    }
-    else
-    {
-        m_delta = h/(a_params.res - 1);
-        result.img_width = (uint16_t)(floor(w/m_delta) + 1);
-        result.img_height = a_params.res;
-    }
-
-    unique_lock lock( m_worker_mutex );
-
-    // Prepare internal parameters
-    m_x1 = result.x1;
-    m_y1 = result.y1;
-    m_mxi = a_params.iter_mx;
-    m_w = result.img_width;
-
-    // Resize internal buffer if size changes
-    uint32_t data_sz = result.img_width  * result.img_height;
-    if ( m_data_cur_size != data_sz )
-    {
-        if ( m_data )
-        {
-            delete[] m_data;
-        }
-        m_data = new uint16_t[data_sz];
-        m_data_cur_size = data_sz;
-    }
-
-    // Note: most threads will be waiting on their cvar, but new threads may not make it to
-    // the cvar before the "start work" notify is signalled, thus new workers will check if
-    // there is work to do BEFORE waiting on initial notify. This avoids the race condition
-    // that could cause them to become stuck on the wait after the signal is sent. Thus the
-    // work (m_y_cur) must be set before any workers are signalled.
-
-    // Set work remaining (first line to process)
-    atomic_store( &m_y_cur, result.img_height - 1 );
-
-    // Adjust worker threads if needed
-    if( a_params.th_cnt > m_workers.size() )
-    {
-        uint8_t i = m_worker_count;
-
-        m_worker_count = a_params.th_cnt;
-        m_workers.reserve( a_params.th_cnt );
-
-        for ( ; i < a_params.th_cnt; i++ )
-        {
-            m_workers.push_back( new thread( &MandelbrotCalc::workerThread, this, i ));
-        }
-    }
-    else if ( a_params.th_cnt < m_workers.size() )
-    {
-        vector<thread*>::iterator t = m_workers.begin() + a_params.th_cnt;
-
-        // Set new desired worker count, notify workers
-        m_worker_count = a_params.th_cnt;
-        m_worker_cvar.notify_all();
-        lock.unlock();
-
-        // Wait for pruned worker threads to stop, then delete
-        for ( ; t != m_workers.end(); t++ )
-        {
-            (*t)->join();
-            delete *t;
-        }
-
-        lock.lock();
-        m_workers.resize(m_worker_count);
-    }
-
-
-    // Start workers
-    m_worker_cvar.notify_all();
-
-    // Wait for last worker to complete
-    // Note that for small/simple images, some workers may not contribute to the calculation
-    m_main_waiting = true;
-    while( atomic_load( &m_y_cur ) > -m_worker_count )
-    {
-        m_worker_cvar.wait(lock);
-    }
-    m_main_waiting = false;
-
-    lock.unlock();
-
-    // Stop timer
-    auto t2 = Clock::now();
-
-    result.img_data = m_data;
-    result.time_ms = chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(); // time msec;
-
-    return result;
-}
 
 /**
  * @brief The worker thread method
