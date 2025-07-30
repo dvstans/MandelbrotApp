@@ -20,7 +20,7 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
     m_worker_count(0),
     m_data_cur_size(0),
     m_data(0),
-    m_main_waiting(false)
+    m_exit(false)
 {
     // Indicate no work to do by setting negative current image line (Y-axis)
     atomic_store( &m_y_cur, -1 );
@@ -33,7 +33,7 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
             // Spin up worker threads in pool
             unique_lock lock( m_worker_mutex );
 
-            m_worker_count = 1; //a_initial_pool_size;
+            m_worker_count = a_initial_pool_size;
             m_workers.reserve( m_worker_count );
 
             for ( uint8_t i = 0; i < m_worker_count; i++ )
@@ -45,6 +45,8 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
 
     unique_lock lock( m_control_mutex );
     m_control_thread = new thread( &MandelbrotCalc::controlThread, this );
+
+    cout << "control thread ID: " << m_control_thread->get_id() << endl;
 }
 
 /**
@@ -54,6 +56,14 @@ MandelbrotCalc::~MandelbrotCalc()
 {
     // Stop threads
     stopWorkerThreads();
+
+    unique_lock ctrl_lock( m_control_mutex );
+    m_exit = true;
+    m_control_cvar.notify_one();
+    ctrl_lock.unlock();
+
+    m_control_thread->join();
+    delete m_control_thread;
 
     // Delete image buffer
     if ( m_data )
@@ -72,7 +82,7 @@ MandelbrotCalc::~MandelbrotCalc()
  * The observer will receive notification of progress, cancellation, or completion.
  */
 void
-MandelbrotCalc::calculate( IObserver & a_observer, CalcParams & a_params )
+MandelbrotCalc::calculate( IObserver & a_observer, Params & a_params )
 {
     // Validate parameters
 
@@ -89,7 +99,7 @@ MandelbrotCalc::calculate( IObserver & a_observer, CalcParams & a_params )
     // Control thread holds this mutex for duration of calculation
     lock_guard lock( m_control_mutex );
 
-    m_calc_params = a_params;
+    m_params = a_params;
     m_observer = &a_observer;
     m_control_cvar.notify_one();
 }
@@ -106,19 +116,22 @@ MandelbrotCalc::controlThread()
         while( m_observer == 0 )
         {
             m_control_cvar.wait(ctrl_lock);
+            if ( m_exit )
+                return;
+
         }
 
         // Start timer
         auto t1 = Clock::now();
 
-        CalcResult result;
+        Result result;
 
-        result.x1 = m_calc_params.x1;
-        result.y1 = m_calc_params.y1;
-        result.x2 = m_calc_params.x2;
-        result.y2 = m_calc_params.y2;
-        result.th_cnt = m_calc_params.th_cnt;
-        result.iter_mx = m_calc_params.iter_mx;
+        result.x1 = m_params.x1;
+        result.y1 = m_params.y1;
+        result.x2 = m_params.x2;
+        result.y2 = m_params.y2;
+        result.th_cnt = m_params.th_cnt;
+        result.iter_mx = m_params.iter_mx;
 
         // Adjust bounding rect if needed
         if ( result.x1 > result.x2 )
@@ -137,15 +150,15 @@ MandelbrotCalc::controlThread()
 
         if ( w > h )
         {
-            m_delta = w/(m_calc_params.res - 1);
-            result.img_width = m_calc_params.res;
+            m_delta = w/(m_params.res - 1);
+            result.img_width = m_params.res;
             result.img_height = (uint16_t)(floor(h/m_delta) + 1);
         }
         else
         {
-            m_delta = h/(m_calc_params.res - 1);
+            m_delta = h/(m_params.res - 1);
             result.img_width = (uint16_t)(floor(w/m_delta) + 1);
-            result.img_height = m_calc_params.res;
+            result.img_height = m_params.res;
         }
 
         unique_lock lock( m_worker_mutex );
@@ -153,7 +166,7 @@ MandelbrotCalc::controlThread()
         // Prepare internal parameters
         m_x1 = result.x1;
         m_y1 = result.y1;
-        m_mxi = m_calc_params.iter_mx;
+        m_mxi = m_params.iter_mx;
         m_w = result.img_width;
 
         // Resize internal buffer if size changes
@@ -174,28 +187,29 @@ MandelbrotCalc::controlThread()
         // that could cause them to become stuck on the wait after the signal is sent. Thus the
         // work (m_y_cur) must be set before any workers are signalled.
 
-        // Set work remaining (first line to process)
+        // Set work done and remaining (first line to process)
+        atomic_store( &m_y_done, result.img_height );
         atomic_store( &m_y_cur, result.img_height - 1 );
 
         // Adjust worker threads if needed
-        if( m_calc_params.th_cnt > m_workers.size() )
+        if( m_params.th_cnt > m_workers.size() )
         {
             uint8_t i = m_worker_count;
 
-            m_worker_count = m_calc_params.th_cnt;
-            m_workers.reserve( m_calc_params.th_cnt );
+            m_worker_count = m_params.th_cnt;
+            m_workers.reserve( m_params.th_cnt );
 
-            for ( ; i < m_calc_params.th_cnt; i++ )
+            for ( ; i < m_params.th_cnt; i++ )
             {
                 m_workers.push_back( new thread( &MandelbrotCalc::workerThread, this, i ));
             }
         }
-        else if ( m_calc_params.th_cnt < m_workers.size() )
+        else if ( m_params.th_cnt < m_workers.size() )
         {
-            vector<thread*>::iterator t = m_workers.begin() + m_calc_params.th_cnt;
+            vector<thread*>::iterator t = m_workers.begin() + m_params.th_cnt;
 
             // Set new desired worker count, notify workers
-            m_worker_count = m_calc_params.th_cnt;
+            m_worker_count = m_params.th_cnt;
             m_worker_cvar.notify_all();
             lock.unlock();
 
@@ -210,20 +224,16 @@ MandelbrotCalc::controlThread()
             m_workers.resize(m_worker_count);
         }
 
-
         // Start workers
         m_worker_cvar.notify_all();
-
-        // Wait for last worker to complete
-        // Note that for small/simple images, some workers may not contribute to the calculation
-        m_main_waiting = true;
-        while( atomic_load( &m_y_cur ) > -m_worker_count )
-        {
-            m_worker_cvar.wait(lock);
-        }
-        m_main_waiting = false;
-
         lock.unlock();
+
+        // Wait for all work to be completed
+        // Note that for small/simple images, some workers may not contribute to the calculation
+        while( atomic_load( &m_y_done ) > 0 )
+        {
+            m_control_cvar.wait( ctrl_lock );
+        }
 
         // Stop timer
         auto t2 = Clock::now();
@@ -232,7 +242,7 @@ MandelbrotCalc::controlThread()
         result.time_ms = chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(); // time msec;
 
         // Notify observer of completion
-        m_observer->calcCompleted( result );
+        m_observer->cbCalcCompleted( result );
 
         // Clear observer and release ctrl lock
         m_observer = 0;
@@ -374,17 +384,29 @@ MandelbrotCalc::workerThread( uint8_t a_id )
 
                     *dat++ = i;
                 }
+
+                // Update work completed
+                line = atomic_fetch_sub( &m_y_done, 1 );
+                if ( line == 1 )
+                {
+                    // When m_y_done reaches 0, all work has been completed
+                    // Use worker cvar to wake control thread
+                    // Taking control mutex ensure main thread is waiting on cvar
+                    lock_guard ctrl_lock( m_control_mutex );
+                    m_control_cvar.notify_all();
+                }
             }
 
             // Last worker to complete will see -N in line count where N is the number of worker threads
             // When this is detected, notify the main thread through the cvar
             // This will wake other workers, but they will see there is no work and go back to waiting.
-            if ( line <= -m_worker_count )
+            /*if ( line <= -m_worker_count )
             {
                 m_worker_cvar.notify_all();
                 //cout << "TN" << (int)a_id << endl;
-            }
+            }*/
         }
+        /*
         else if ( m_main_waiting )
         {
             // If a worker gets here, it means other workers completed calculation before
@@ -395,7 +417,7 @@ MandelbrotCalc::workerThread( uint8_t a_id )
                 m_worker_cvar.notify_all();
                 //cout << "TN(x)" << (int)a_id << endl;
             }
-        }
+        }*/
     }
 
     //cout << "TX" << (int)a_id << endl;

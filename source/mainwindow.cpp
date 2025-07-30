@@ -13,6 +13,7 @@
 #include <QJsonDocument>
 #include <QJsonArray>
 #include <QTimer>
+#include <QMetaObject>
 
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
@@ -27,7 +28,7 @@ MainWindow::MainWindow(QWidget *parent):
     QMainWindow(parent),
     ui(new Ui::MainWindow),
     m_settings(QSettings::UserScope),
-    m_calc(true,8),
+    m_calc( true, 4 ),
     m_palette_edit_dlg(this,*this),
     m_palette_dlg_edit_init(true),
     m_palette_scale(1),
@@ -64,6 +65,7 @@ MainWindow::MainWindow(QWidget *parent):
     unsigned int max_th = std::thread::hardware_concurrency();
     ui->spinBoxThreadCount->setMaximum( max_th );
     ui->spinBoxThreadCount->setValue( max_th * .75 ); // Don't use all by default
+    //ui->spinBoxThreadCount->setValue( 4 ); // Don't use all by default
 
     // Because Qt doesn't allow widgets to be sized with font points, we must
     // adjust fixed size line edits manually. QLineEdit has hidden padding,
@@ -961,6 +963,27 @@ MainWindow::inputPaletteName( const QString & a_title )
     return "";
 }
 
+void
+MainWindow::calcCompleted()
+{
+    imageDraw();
+
+    // Update window title with important calc results
+    setWindowTitle( QString("%1  (%2,%3)->(%4,%5)  %6w x %7h  msec: %8")
+                       .arg(m_app_name)
+                       .arg(m_calc_result.x1)
+                       .arg(m_calc_result.y1)
+                       .arg(m_calc_result.x2)
+                       .arg(m_calc_result.y2)
+                       .arg(m_calc_result.img_width)
+                       .arg(m_calc_result.img_height)
+                       .arg(m_calc_result.time_ms)
+                   );
+
+    ui->buttonCalc->setDisabled(false);
+    ui->buttonImageSave->setDisabled(false);
+}
+
 /**
  * @brief Runs the Mandelbrot set calculation.
  *
@@ -982,38 +1005,23 @@ MainWindow::runCalculate()
 
 // MandelbrotCalc::IObserver methods
 void
-MainWindow::calcProgress( int a_progress )
+MainWindow::cbCalcProgress( int a_progress )
 {
     cout << " " << a_progress << endl;
 }
 
 void
-MainWindow::calcCompleted( MandelbrotCalc::CalcResult a_result )
+MainWindow::cbCalcCompleted( MandelbrotCalc::Result a_result )
 {
     cout << "calc done" << endl;
 
     m_calc_result = a_result;
 
-    imageDraw();
-
-    // Update window title with important calc results
-    setWindowTitle( QString("%1  (%2,%3)->(%4,%5)  %6w x %7h  msec: %8")
-                       .arg(m_app_name)
-                       .arg(m_calc_result.x1)
-                       .arg(m_calc_result.y1)
-                       .arg(m_calc_result.x2)
-                       .arg(m_calc_result.y2)
-                       .arg(m_calc_result.img_width)
-                       .arg(m_calc_result.img_height)
-                       .arg(m_calc_result.time_ms)
-                   );
-
-    ui->buttonCalc->setDisabled(false);
-    ui->buttonImageSave->setDisabled(false);
+    QMetaObject::invokeMethod( this, &MainWindow::calcCompleted );
 }
 
 void
-MainWindow::calcCancelled()
+MainWindow::cbCalcCancelled()
 {
     cout << "calc cancelled" << endl;
 }

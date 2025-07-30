@@ -60,6 +60,7 @@ private:
 
     void    adjustPalette( const QString &a_text );
     void    adjustScaleSliderChanged( int a_scale );
+    void    calcCompleted();
     void    imageDraw();
     uchar * imageRender();
     QString inputPaletteName( const QString & a_title );
@@ -80,9 +81,9 @@ private:
     bool    paletteSave( PaletteInfo & palette_info );
 
     // MandelbrotCalc::IObserver methods
-    void calcProgress( int a_progress );
-    void calcCompleted( MandelbrotCalc::CalcResult a_result );
-    void calcCancelled();
+    void    cbCalcProgress( int a_progress );
+    void    cbCalcCompleted( MandelbrotCalc::Result a_result );
+    void    cbCalcCancelled();
 
     // JSON helper methods
     bool    jsonReadBool( const QJsonObject & obj, const QString & key );
@@ -120,7 +121,8 @@ private:
     bool                        m_palette_dlg_edit_init;
     PaletteGenerator            m_palette_gen;
     bool                        m_palette_repeat;
-    MandelbrotCalc::CalcResult  m_calc_result;
+    MandelbrotCalc::Params      m_calc_params;
+    MandelbrotCalc::Result      m_calc_result;
     uint8_t                     m_calc_ss;
     PaletteMap_t                m_palette_map;
     uint16_t                    m_palette_scale;
@@ -129,7 +131,6 @@ private:
     bool                        m_ignore_scale_sig;
     bool                        m_ignore_off_sig;
     bool                        m_ignore_aspect_sig;
-    MandelbrotCalc::CalcParams  m_calc_params;
     std::vector<AspectRatio>    m_aspect_ratios;
     std::vector<CalcPos>        m_calc_history;
     uint32_t                    m_calc_history_idx;

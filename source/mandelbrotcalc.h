@@ -32,21 +32,21 @@ public:
     /**
      * @brief The CalcParams class contains required calculation parameters
      */
-    struct CalcParams{
+    struct Params{
         uint16_t            res;        // Image resolution in pixels on major axis
         double              x1;         // x coordinate bounding point 1
         double              y1;         // y coordinate bounding point 1
         double              x2;         // x coordinate bounding point 2
         double              y2;         // y coordinate bounding point 2
         uint16_t            iter_mx;    // Max iterations
-        uint8_t             th_cnt;     // Thread count
+        uint16_t            th_cnt;     // Thread count
     };
 
     /**
      * @brief The CalcResult class contains the produced image and various metrics
      */
-    struct CalcResult{
-        CalcResult(): img_data(0)
+    struct Result{
+        Result(): img_data(0)
         {}
 
         double              x1;         // x coordinate bounding point 1 (adjusted)
@@ -54,7 +54,7 @@ public:
         double              x2;         // x coordinate bounding point 2 (adjusted)
         double              y2;         // y coordinate bounding point 2 (adjusted)
         uint16_t            iter_mx;    // Max iterations
-        uint8_t             th_cnt;     // Thread count used
+        uint16_t            th_cnt;     // Thread count used
         uint16_t            img_width;  // Image width
         uint16_t            img_height; // Imahe height
         const uint16_t *    img_data;   // Image data (internal buffer)
@@ -64,16 +64,16 @@ public:
     class IObserver
     {
     public:
-        virtual void calcProgress( int ) = 0;
-        virtual void calcCompleted( CalcResult ) = 0;
-        virtual void calcCancelled() = 0;
+        virtual void cbCalcProgress( int ) = 0;
+        virtual void cbCalcCompleted( Result ) = 0;
+        virtual void cbCalcCancelled() = 0;
     };
 
     MandelbrotCalc( bool use_thread_pool = false, uint8_t initial_pool_size = 0 );
     ~MandelbrotCalc();
 
     //CalcResult  calculate( CalcParams & a_params );
-    void        calculate( IObserver & a_observer, CalcParams & a_params );
+    void        calculate( IObserver & a_observer, Params & a_params );
     bool        isCalculating();
     void        stopCalculation();
     void        stopWorkerThreads();
@@ -82,14 +82,15 @@ private:
     std::thread*                m_control_thread;   // Control thread to manage workers
     std::mutex                  m_control_mutex;    // Mutex used to protect control thread cvar
     std::condition_variable     m_control_cvar;     // Cvar used to signal control thread to start
-    CalcParams                  m_calc_params;
+    Params                      m_params;
     IObserver *                 m_observer;
     bool                        m_use_thread_pool;  // Use thread pool flag
-    uint8_t                     m_worker_count;     // Current desired number (target) of running threads
+    uint16_t                    m_worker_count;     // Current desired number (target) of running threads
     std::vector<std::thread*>   m_workers;          // Worker thread container
     std::mutex                  m_worker_mutex;     // Mutex used to protect worker cvar
     std::condition_variable     m_worker_cvar;      // Cvar used to signal workers
     std::atomic<int32_t>        m_y_cur;            // Current image line to process (negative means no work)
+    std::atomic<int32_t>        m_y_done;           // Completed image lines
     uint32_t                    m_data_cur_size;    // Current image size
     uint16_t *                  m_data;             // Image buffer
     uint16_t                    m_mxi;              // Max iterations
@@ -97,7 +98,7 @@ private:
     double                      m_x1;               // Initial X value
     double                      m_y1;               // Initial Y value
     double                      m_delta;            // Real delta between pixels
-    bool                        m_main_waiting;     // Flag to indicate main thread is waiting to be signalled
+    bool                        m_exit;
 
     void controlThread();
     void workerThread( uint8_t id );
