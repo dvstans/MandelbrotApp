@@ -18,6 +18,7 @@
 #include "mainwindow.h"
 #include "ui_mainwindow.h"
 
+
 using namespace std;
 
 /**
@@ -37,10 +38,14 @@ MainWindow::MainWindow(QWidget *parent):
     m_ignore_scale_sig(false),
     m_ignore_off_sig(false),
     m_calc_history_idx(0),
-    m_app_name( QString("MandelbrotApp ") + APP_VERSION )
+    m_app_name( QString("MandelbrotApp ") + APP_VERSION ),
+    m_status_dlg( this, *this )
 {
     setWindowTitle( m_app_name );
     ui->setupUi(this);
+
+    m_status_dlg.setWindowTitle( "Calculation Progress" );
+    m_status_dlg.setModal( true );
 
     // Setup MandelbrotViewer
     m_viewer = new MandelbrotViewer( *ui->frameViewer, *this );
@@ -203,20 +208,18 @@ MainWindow::aspectChange( int a_index )
 void
 MainWindow::calculate()
 {
-    ui->buttonCalc->setDisabled(true);
-    //runCalculate();
-
-    // Start calculation in a different processing thread to free UI thread
-    //QApplication::processEvents(); // Force UI to update
-    //QTimer::singleShot(0, this, &MainWindow::runCalculate );
+    //ui->buttonCalc->setDisabled(true);
 
     m_calc_ss = ui->spinBoxSuperSample->value();
     m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
     m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
     m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
 
+
+    m_status_dlg.reset();
+
     // Returns immediately, observer notified on progress/completion
-    m_calc.calculate( *this, m_calc_params );
+    m_calc.calculate( m_status_dlg, m_calc_params );
 }
 
 /**
@@ -980,52 +983,11 @@ MainWindow::calcCompleted()
                        .arg(m_calc_result.time_ms)
                    );
 
-    ui->buttonCalc->setDisabled(false);
+    //ui->buttonCalc->setDisabled(false);
     ui->buttonImageSave->setDisabled(false);
+
+    m_status_dlg.hide();
 }
-
-/**
- * @brief Runs the Mandelbrot set calculation.
- *
- * This method is run separately from the calculate slot to prevent the
- * UI from hanging for the duration of the calculation.
- */
-/*void
-MainWindow::runCalculate()
-{
-    m_calc_ss = ui->spinBoxSuperSample->value();
-
-    m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
-    m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
-    m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
-
-    //m_calc_result = m_calc.calculate( m_calc_params );
-    m_calc.calculate( *this, m_calc_params );
-}*/
-
-// MandelbrotCalc::IObserver methods
-void
-MainWindow::cbCalcProgress( int a_progress )
-{
-    cout << " " << a_progress << endl;
-}
-
-void
-MainWindow::cbCalcCompleted( MandelbrotCalc::Result a_result )
-{
-    cout << "calc done" << endl;
-
-    m_calc_result = a_result;
-
-    QMetaObject::invokeMethod( this, &MainWindow::calcCompleted );
-}
-
-void
-MainWindow::cbCalcCancelled()
-{
-    cout << "calc cancelled" << endl;
-}
-
 
 /**
  * @brief Deletes specified palette from app settings
@@ -1355,6 +1317,28 @@ MainWindow::paletteSave( PaletteInfo & a_pal_info )
     return true;
 }
 
+//==================== MandelbrotCalc::IObserver methods methods ====================
+
+
+void
+MainWindow::cbCalcProgress( int a_progress )
+{
+    (void)a_progress;    // Never called
+}
+
+void
+MainWindow::cbCalcCompleted( MandelbrotCalc::Result a_result )
+{
+    m_calc_result = a_result;
+
+    QMetaObject::invokeMethod( this, &MainWindow::calcCompleted );
+}
+
+void
+MainWindow::cbCalcCancelled()
+{
+
+}
 
 //==================== JSON helper methods ====================
 

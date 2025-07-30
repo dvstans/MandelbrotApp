@@ -91,10 +91,12 @@ private:
     std::condition_variable     m_worker_cvar;      // Cvar used to signal workers
     std::atomic<int32_t>        m_y_cur;            // Current image line to process (negative means no work)
     std::atomic<int32_t>        m_y_done;           // Completed image lines
+    int32_t                     m_y_upd;
     uint32_t                    m_data_cur_size;    // Current image size
     uint16_t *                  m_data;             // Image buffer
     uint16_t                    m_mxi;              // Max iterations
     uint16_t                    m_w;                // Image width
+    uint16_t                    m_h;                // Image height
     double                      m_x1;               // Initial X value
     double                      m_y1;               // Initial Y value
     double                      m_delta;            // Real delta between pixels

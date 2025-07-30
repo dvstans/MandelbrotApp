@@ -14,6 +14,7 @@ DEFINES += APP_VERSION=\\\"$$VERSION\\\"
 QMAKE_CXXFLAGS += -O2
 
 SOURCES += \
+    calcstatusdialog.cpp \
     main.cpp \
     mainwindow.cpp \
     mandelbrotcalc.cpp \
@@ -22,6 +23,7 @@ SOURCES += \
     palettegenerator.cpp
 
 HEADERS += \
+    calcstatusdialog.h \
     mainwindow.h \
     mandelbrotcalc.h \
     mandelbrotviewer.h \
@@ -30,6 +32,7 @@ HEADERS += \
     paletteinfo.h
 
 FORMS += \
+    calcstatusdialog.ui \
     mainwindow.ui \
     paletteeditdialog.ui
 

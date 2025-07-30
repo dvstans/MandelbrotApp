@@ -10,6 +10,7 @@
 #include "mandelbrotcalc.h"
 #include "paletteinfo.h"
 #include "paletteeditdialog.h"
+#include "calcstatusdialog.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -39,6 +40,8 @@ public:
     MainWindow(QWidget *parent = nullptr);
     ~MainWindow();
 
+    void calcCompleted();
+
 public slots:
     void aspectChange( int index );
     void calculate();
@@ -60,7 +63,6 @@ private:
 
     void    adjustPalette( const QString &a_text );
     void    adjustScaleSliderChanged( int a_scale );
-    void    calcCompleted();
     void    imageDraw();
     uchar * imageRender();
     QString inputPaletteName( const QString & a_title );
@@ -136,6 +138,7 @@ private:
     uint32_t                    m_calc_history_idx;
     QString                     m_cur_dir;
     QString                     m_app_name;
+    CalcStatusDialog            m_status_dlg;
 
     friend class MandelbrotViewer;
 };

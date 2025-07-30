@@ -45,8 +45,6 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
 
     unique_lock lock( m_control_mutex );
     m_control_thread = new thread( &MandelbrotCalc::controlThread, this );
-
-    cout << "control thread ID: " << m_control_thread->get_id() << endl;
 }
 
 /**
@@ -168,6 +166,7 @@ MandelbrotCalc::controlThread()
         m_y1 = result.y1;
         m_mxi = m_params.iter_mx;
         m_w = result.img_width;
+        m_h = result.img_height;
 
         // Resize internal buffer if size changes
         uint32_t data_sz = result.img_width  * result.img_height;
@@ -190,6 +189,8 @@ MandelbrotCalc::controlThread()
         // Set work done and remaining (first line to process)
         atomic_store( &m_y_done, result.img_height );
         atomic_store( &m_y_cur, result.img_height - 1 );
+
+        m_y_upd = 0.99*m_h;
 
         // Adjust worker threads if needed
         if( m_params.th_cnt > m_workers.size() )
@@ -395,29 +396,14 @@ MandelbrotCalc::workerThread( uint8_t a_id )
                     lock_guard ctrl_lock( m_control_mutex );
                     m_control_cvar.notify_all();
                 }
+                else if ( line == m_y_upd )
+                {
+                    m_y_upd = (m_h - line)*100/m_h;
+                    m_observer->cbCalcProgress( m_y_upd );
+                    m_y_upd = (99 - m_y_upd)*m_h/100;
+                }
             }
-
-            // Last worker to complete will see -N in line count where N is the number of worker threads
-            // When this is detected, notify the main thread through the cvar
-            // This will wake other workers, but they will see there is no work and go back to waiting.
-            /*if ( line <= -m_worker_count )
-            {
-                m_worker_cvar.notify_all();
-                //cout << "TN" << (int)a_id << endl;
-            }*/
         }
-        /*
-        else if ( m_main_waiting )
-        {
-            // If a worker gets here, it means other workers completed calculation before
-            // this thread was able to get any work (lines), thus proceed with termination.
-            line = atomic_fetch_sub( &m_y_cur, 1 );
-            if ( line <= -m_worker_count )
-            {
-                m_worker_cvar.notify_all();
-                //cout << "TN(x)" << (int)a_id << endl;
-            }
-        }*/
     }
 
     //cout << "TX" << (int)a_id << endl;
