@@ -46,19 +46,19 @@ public:
      * @brief The CalcResult class contains the produced image and various metrics
      */
     struct Result{
-        Result(): img_data(0)
+        Result()
         {}
 
-        double              x1;         // x coordinate bounding point 1 (adjusted)
-        double              y1;         // y coordinate bounding point 1 (adjusted)
-        double              x2;         // x coordinate bounding point 2 (adjusted)
-        double              y2;         // y coordinate bounding point 2 (adjusted)
-        uint16_t            iter_mx;    // Max iterations
-        uint16_t            th_cnt;     // Thread count used
-        uint16_t            img_width;  // Image width
-        uint16_t            img_height; // Imahe height
-        const uint16_t *    img_data;   // Image data (internal buffer)
-        uint64_t            time_ms;    // Calc time in milliseconds
+        double                  x1;         // x coordinate bounding point 1 (adjusted)
+        double                  y1;         // y coordinate bounding point 1 (adjusted)
+        double                  x2;         // x coordinate bounding point 2 (adjusted)
+        double                  y2;         // y coordinate bounding point 2 (adjusted)
+        uint16_t                iter_mx;    // Max iterations
+        uint16_t                th_cnt;     // Thread count used
+        uint16_t                img_width;  // Image width
+        uint16_t                img_height; // Imahe height
+        std::vector<uint16_t>   img_data;   // Image data (internal buffer)
+        uint64_t                time_ms;    // Calc time in milliseconds
     };
 
     class IObserver
@@ -92,7 +92,7 @@ private:
     std::atomic<int32_t>        m_y_cur;            // Current image line to process (negative means no work)
     std::atomic<int32_t>        m_y_done;           // Completed image lines
     int32_t                     m_y_upd;
-    uint32_t                    m_data_cur_size;    // Current image size
+    //uint32_t                    m_data_cur_size;    // Current image size
     uint16_t *                  m_data;             // Image buffer
     uint16_t                    m_mxi;              // Max iterations
     uint16_t                    m_w;                // Image width
@@ -100,6 +100,7 @@ private:
     double                      m_x1;               // Initial X value
     double                      m_y1;               // Initial Y value
     double                      m_delta;            // Real delta between pixels
+    bool                        m_cancel;
     bool                        m_exit;
 
     void controlThread();

@@ -39,13 +39,13 @@ MainWindow::MainWindow(QWidget *parent):
     m_ignore_off_sig(false),
     m_calc_history_idx(0),
     m_app_name( QString("MandelbrotApp ") + APP_VERSION ),
-    m_status_dlg( this, *this )
+    m_status_dlg( this, m_calc, *this )
 {
     setWindowTitle( m_app_name );
     ui->setupUi(this);
 
-    m_status_dlg.setWindowTitle( "Calculation Progress" );
-    m_status_dlg.setModal( true );
+    //m_status_dlg.setWindowTitle( "Calculation Progress" );
+    //m_status_dlg.setModal( true );
 
     // Setup MandelbrotViewer
     m_viewer = new MandelbrotViewer( *ui->frameViewer, *this );
@@ -208,15 +208,12 @@ MainWindow::aspectChange( int a_index )
 void
 MainWindow::calculate()
 {
-    //ui->buttonCalc->setDisabled(true);
-
     m_calc_ss = ui->spinBoxSuperSample->value();
     m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
     m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
     m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
 
-
-    m_status_dlg.reset();
+    m_status_dlg.start();
 
     // Returns immediately, observer notified on progress/completion
     m_calc.calculate( m_status_dlg, m_calc_params );
@@ -291,7 +288,7 @@ MainWindow::paletteOffsetSliderChanged( int a_offset )
 
     m_palette_offset = a_offset;
 
-    if ( m_calc_result.img_data )
+    if ( m_calc_result.img_data.size() )
     {
         // Redraw image (regenerates palette as needed)
         imageDraw();
@@ -311,7 +308,7 @@ MainWindow::paletteScaleSliderChanged( int a_scale )
     // Adjust offset slider based on new scale
     adjustScaleSliderChanged( a_scale );
 
-    if ( m_calc_result.img_data )
+    if ( m_calc_result.img_data.size() )
     {
         // Redraw image (regenerates palette as needed)
         imageDraw();
@@ -331,7 +328,7 @@ MainWindow::paletteSelect( const QString &a_text )
     // Setup new palette data and adjust other UI inputs
     adjustPalette( a_text );
 
-    if ( m_calc_result.img_data )
+    if ( m_calc_result.img_data.size() )
     {
         // Redraw image (regenerates palette as needed)
         imageDraw();
@@ -856,7 +853,7 @@ MainWindow::imageRender()
     int imstride = m_calc_result.img_width*4;
     uchar *imbuffer = new uchar[imstride*m_calc_result.img_height];
     int x;
-    const uint16_t * itbuf = m_calc_result.img_data;
+    const uint16_t * itbuf = &m_calc_result.img_data[0];
     uint32_t *imbuf;
     const std::vector<uint32_t> & palette = m_palette_gen.renderPalette( m_palette_scale );
     bool repeats = m_palette_gen.repeats();

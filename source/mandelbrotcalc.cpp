@@ -18,8 +18,8 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
     m_observer(0),
     m_use_thread_pool( a_use_thread_pool ),
     m_worker_count(0),
-    m_data_cur_size(0),
-    m_data(0),
+    //m_data_cur_size(0),
+    //m_data(0),
     m_exit(false)
 {
     // Indicate no work to do by setting negative current image line (Y-axis)
@@ -64,10 +64,10 @@ MandelbrotCalc::~MandelbrotCalc()
     delete m_control_thread;
 
     // Delete image buffer
-    if ( m_data )
-    {
-        delete[] m_data;
-    }
+    //if ( m_data )
+    //{
+    //    delete[] m_data;
+    //}
 }
 
 
@@ -110,6 +110,7 @@ MandelbrotCalc::controlThread()
     while( 1 )
     {
         ctrl_lock.lock();
+        m_cancel = false;
 
         while( m_observer == 0 )
         {
@@ -168,9 +169,12 @@ MandelbrotCalc::controlThread()
         m_w = result.img_width;
         m_h = result.img_height;
 
-        // Resize internal buffer if size changes
-        uint32_t data_sz = result.img_width  * result.img_height;
-        if ( m_data_cur_size != data_sz )
+        // Resize image data buffer
+        result.img_data.resize( result.img_width  * result.img_height );
+        // m_data points to beginning of data buffer
+        m_data = &result.img_data[0];
+
+        /*if ( m_data_cur_size != data_sz )
         {
             if ( m_data )
             {
@@ -178,7 +182,7 @@ MandelbrotCalc::controlThread()
             }
             m_data = new uint16_t[data_sz];
             m_data_cur_size = data_sz;
-        }
+        }*/
 
         // Note: most threads will be waiting on their cvar, but new threads may not make it to
         // the cvar before the "start work" notify is signalled, thus new workers will check if
@@ -231,7 +235,7 @@ MandelbrotCalc::controlThread()
 
         // Wait for all work to be completed
         // Note that for small/simple images, some workers may not contribute to the calculation
-        while( atomic_load( &m_y_done ) > 0 )
+        while( atomic_load( &m_y_done ) > 0 && !m_cancel )
         {
             m_control_cvar.wait( ctrl_lock );
         }
@@ -239,11 +243,18 @@ MandelbrotCalc::controlThread()
         // Stop timer
         auto t2 = Clock::now();
 
-        result.img_data = m_data;
-        result.time_ms = chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(); // time msec;
+        if ( m_cancel )
+        {
+            m_observer->cbCalcCancelled();
+        }
+        else
+        {
+            //result.img_data = m_data;
+            result.time_ms = chrono::duration_cast<std::chrono::milliseconds>(t2 - t1).count(); // time msec;
 
-        // Notify observer of completion
-        m_observer->cbCalcCompleted( result );
+            // Notify observer of completion
+            m_observer->cbCalcCompleted( result );
+        }
 
         // Clear observer and release ctrl lock
         m_observer = 0;
@@ -268,6 +279,10 @@ MandelbrotCalc::stopCalculation()
 {
     // Set no work indicated
     atomic_store( &m_y_cur, -1 );
+
+    lock_guard ctrl_lock( m_control_mutex );
+    m_cancel = true;
+    m_control_cvar.notify_all();
 }
 
 /**

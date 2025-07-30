@@ -13,10 +13,13 @@ class CalcStatusDialog : public QDialog, public MandelbrotCalc::IObserver
     Q_OBJECT
 
 public:
-    explicit CalcStatusDialog( QWidget *parent, MandelbrotCalc::IObserver &a_observer );
+    explicit CalcStatusDialog( QWidget *parent, MandelbrotCalc & a_calc, MandelbrotCalc::IObserver &a_observer );
     ~CalcStatusDialog();
 
-    void    reset();
+    void    start();
+
+public slots:
+    void    cancel();
 
 private:
     void    calcProgress( int a_progress );
@@ -26,8 +29,9 @@ private:
     void    cbCalcCompleted( MandelbrotCalc::Result a_result );
     void    cbCalcCancelled();
 
-    Ui::CalcStatusDialog *      ui;
-    MandelbrotCalc::IObserver & m_observer;
+    Ui::CalcStatusDialog        *ui;
+    MandelbrotCalc              &m_calc;
+    MandelbrotCalc::IObserver   &m_observer;
 };
 
 #endif // CALCSTATUSDIALOG_H
