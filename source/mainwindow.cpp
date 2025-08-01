@@ -39,13 +39,13 @@ MainWindow::MainWindow(QWidget *parent):
     m_ignore_off_sig(false),
     m_calc_history_idx(0),
     m_app_name( QString("MandelbrotApp ") + APP_VERSION ),
-    m_status_dlg( this, m_calc, *this )
+    m_status_dlg( this )
 {
     setWindowTitle( m_app_name );
     ui->setupUi(this);
 
-    //m_status_dlg.setWindowTitle( "Calculation Progress" );
-    //m_status_dlg.setModal( true );
+    // Connect cancel button in status dlg to main window cancel slot
+    QObject::connect( m_status_dlg.getCancelBtn(), SIGNAL(clicked()), this, SLOT(cancel()), Qt::AutoConnection);
 
     // Setup MandelbrotViewer
     m_viewer = new MandelbrotViewer( *ui->frameViewer, *this );
@@ -213,10 +213,19 @@ MainWindow::calculate()
     m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
     m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
 
-    m_status_dlg.start();
+    m_status_dlg.setProgress( 0 );
+    m_status_dlg.show();
 
     // Returns immediately, observer notified on progress/completion
-    m_calc.calculate( m_status_dlg, m_calc_params );
+    m_calc.calculate( *this, m_calc_params );
+}
+
+void
+MainWindow::cancel()
+{
+    cout << "cancel" << endl;
+
+    m_calc.stopCalculation();
 }
 
 /**
@@ -1320,7 +1329,7 @@ MainWindow::paletteSave( PaletteInfo & a_pal_info )
 void
 MainWindow::cbCalcProgress( int a_progress )
 {
-    (void)a_progress;    // Never called
+    QMetaObject::invokeMethod( &m_status_dlg, &CalcStatusDialog::setProgress, a_progress );
 }
 
 void
@@ -1334,7 +1343,8 @@ MainWindow::cbCalcCompleted( MandelbrotCalc::Result a_result )
 void
 MainWindow::cbCalcCancelled()
 {
-
+    cout << "cancelled" << endl;
+    m_status_dlg.hide();
 }
 
 //==================== JSON helper methods ====================

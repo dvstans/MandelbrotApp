@@ -1,14 +1,12 @@
-#include <iostream>
+//#include <iostream>
 #include "calcstatusdialog.h"
 #include "ui_calcstatusdialog.h"
 
 using namespace std;
 
-CalcStatusDialog::CalcStatusDialog( QWidget *a_parent, MandelbrotCalc & a_calc, MandelbrotCalc::IObserver &a_observer ) :
+CalcStatusDialog::CalcStatusDialog( QWidget *a_parent ) :
     QDialog( a_parent, Qt::CustomizeWindowHint | Qt::WindowTitleHint ),
-    ui(new Ui::CalcStatusDialog),
-    m_calc( a_calc ),
-    m_observer( a_observer )
+    ui( new Ui::CalcStatusDialog )
 {
     ui->setupUi(this);
 }
@@ -18,7 +16,21 @@ CalcStatusDialog::~CalcStatusDialog()
     delete ui;
 }
 
+QObject*
+CalcStatusDialog::getCancelBtn()
+{
+    return ui->buttonCancel;
+}
 
+void
+CalcStatusDialog::setProgress( int a_progress )
+{
+    ui->progressBar->setValue( a_progress );
+}
+
+
+
+/*
 void
 CalcStatusDialog::start()
 {
@@ -27,11 +39,6 @@ CalcStatusDialog::start()
 }
 
 
-void
-CalcStatusDialog::cancel()
-{
-    m_calc.stopCalculation();
-}
 
 void
 CalcStatusDialog::calcProgress( int a_progress )
@@ -60,3 +67,4 @@ CalcStatusDialog::cbCalcCancelled()
     m_observer.cbCalcCancelled();
     hide();
 }
+*/

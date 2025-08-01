@@ -45,6 +45,7 @@ public:
 public slots:
     void aspectChange( int index );
     void calculate();
+    void cancel();
     void closeEvent( QCloseEvent *event );
     void paletteEdit();
     void paletteOffsetSliderChanged(int);

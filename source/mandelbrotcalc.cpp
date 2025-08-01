@@ -245,6 +245,9 @@ MandelbrotCalc::controlThread()
 
         if ( m_cancel )
         {
+            // Wait for workers to exit (this is a brute force approach that could be handled better)
+            stopWorkerThreads();
+
             m_observer->cbCalcCancelled();
         }
         else
@@ -277,9 +280,7 @@ MandelbrotCalc::isCalculating()
 void
 MandelbrotCalc::stopCalculation()
 {
-    // Set no work indicated
-    atomic_store( &m_y_cur, -1 );
-
+    // Signal control thread to stop calculation
     lock_guard ctrl_lock( m_control_mutex );
     m_cancel = true;
     m_control_cvar.notify_all();
@@ -347,13 +348,14 @@ MandelbrotCalc::workerThread( uint8_t a_id )
 
     while( 1 )
     {
-        // Wait for run notification ONLY if there is no work to do. Note: notifications may be spurious
-        if ( atomic_load( &m_y_cur ) < 0 )
+        // Wait for run notification if there is nothing to do. Note: notifications may be spurious
+        // Mutex contention only occurs when workers are idle, once calc begins only atomics are used
+        lock.lock();
+        if ( atomic_load( &m_y_cur ) < 0 && a_id < m_worker_count )
         {
-            lock.lock();
             m_worker_cvar.wait(lock);
-            lock.unlock();
         }
+        lock.unlock();
 
         // Prune this thread if its ID is out of bounds with target worker count
         if ( a_id >= m_worker_count )
@@ -378,6 +380,9 @@ MandelbrotCalc::workerThread( uint8_t a_id )
                 // Iterate over current line's X-axis
                 for ( x = 0; x < m_w; x++, xr += m_delta )
                 {
+                    if ( m_cancel )
+                        break;
+
                     // Perform calculation: Z => Z^2 + C
 
                     i = 0;
@@ -386,7 +391,8 @@ MandelbrotCalc::workerThread( uint8_t a_id )
                     zx2 *= zx;
                     zy2 *= zy;
 
-                    while ( i++ <= mxi && (( zx2 + zy2 ) < 4 )) {
+                    while ( i++ <= mxi && (( zx2 + zy2 ) < 4 ))
+                    {
                         tmp = zx;
                         zx2 = zx = zx2 - zy2 + xr;
                         zy2 = zy = 2*tmp*zy + yr;
@@ -394,9 +400,8 @@ MandelbrotCalc::workerThread( uint8_t a_id )
                         zy2 *= zy;
                     };
 
-                    if ( i > mxi ) {
+                    if ( i > mxi )
                         i = 0;
-                    }
 
                     *dat++ = i;
                 }

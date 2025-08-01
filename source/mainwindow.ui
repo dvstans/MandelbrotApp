@@ -678,5 +678,6 @@
   <slot>imageLoad()</slot>
   <slot>zoomOut()</slot>
   <slot>zoomIn()</slot>
+  <slot>cancel()</slot>
  </slots>
 </ui>

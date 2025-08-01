@@ -88,24 +88,7 @@
   </layout>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>buttonCancel</sender>
-   <signal>clicked()</signal>
-   <receiver>CalcStatusDialog</receiver>
-   <slot>cancel()</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>225</x>
-     <y>46</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>225</x>
-     <y>31</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
  <slots>
   <slot>cancel()</slot>
  </slots>
