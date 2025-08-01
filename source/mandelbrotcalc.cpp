@@ -18,8 +18,6 @@ MandelbrotCalc::MandelbrotCalc( bool a_use_thread_pool, uint8_t a_initial_pool_s
     m_observer(0),
     m_use_thread_pool( a_use_thread_pool ),
     m_worker_count(0),
-    //m_data_cur_size(0),
-    //m_data(0),
     m_exit(false)
 {
     // Indicate no work to do by setting negative current image line (Y-axis)
@@ -62,12 +60,6 @@ MandelbrotCalc::~MandelbrotCalc()
 
     m_control_thread->join();
     delete m_control_thread;
-
-    // Delete image buffer
-    //if ( m_data )
-    //{
-    //    delete[] m_data;
-    //}
 }
 
 
@@ -174,16 +166,6 @@ MandelbrotCalc::controlThread()
         // m_data points to beginning of data buffer
         m_data = &result.img_data[0];
 
-        /*if ( m_data_cur_size != data_sz )
-        {
-            if ( m_data )
-            {
-                delete[] m_data;
-            }
-            m_data = new uint16_t[data_sz];
-            m_data_cur_size = data_sz;
-        }*/
-
         // Note: most threads will be waiting on their cvar, but new threads may not make it to
         // the cvar before the "start work" notify is signalled, thus new workers will check if
         // there is work to do BEFORE waiting on initial notify. This avoids the race condition
@@ -199,7 +181,7 @@ MandelbrotCalc::controlThread()
         // Adjust worker threads if needed
         if( m_params.th_cnt > m_workers.size() )
         {
-            uint8_t i = m_worker_count;
+            uint16_t i = m_worker_count;
 
             m_worker_count = m_params.th_cnt;
             m_workers.reserve( m_params.th_cnt );
@@ -332,16 +314,16 @@ MandelbrotCalc::stopWorkerThreads()
  * attribute - all threads with IDs beyond this value exit.
  */
 void
-MandelbrotCalc::workerThread( uint8_t a_id )
+MandelbrotCalc::workerThread( uint16_t a_id )
 {
     //cout << "TS" << (int)a_id << endl;
 
     unique_lock lock( m_worker_mutex, defer_lock );
     uint16_t    x;
-    int32_t     line;
-    uint16_t *  dat;
+    int32_t     line, prog;
+    uint32_t *  dat;
     double      xr, yr, zx, zy, zx2, zy2, tmp;
-    uint16_t    i, mxi;
+    uint32_t    i, mxi;
 
     // Note: workers will run until all work is exhausted then check for exit conditions
     // This means worker count cannot be adjusted during a calculation
@@ -418,9 +400,9 @@ MandelbrotCalc::workerThread( uint8_t a_id )
                 }
                 else if ( line == m_y_upd )
                 {
-                    m_y_upd = (m_h - line)*100/m_h;
-                    m_observer->cbCalcProgress( m_y_upd );
-                    m_y_upd = (99 - m_y_upd)*m_h/100;
+                    prog = (m_h - line)*100/m_h;
+                    m_y_upd = (99 - prog)*m_h/100;
+                    m_observer->cbCalcProgress( prog );
                 }
             }
         }

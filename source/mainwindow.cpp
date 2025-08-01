@@ -58,8 +58,8 @@ MainWindow::MainWindow(QWidget *parent):
 
     // Adjust various UI components
     ui->menubar->hide();
-    ui->lineEditResolution->setValidator( new QIntValidator(8, 7680, this) );
-    ui->lineEditIterMax->setValidator( new QIntValidator(1, 65536, this) );
+    ui->lineEditResolution->setValidator( new QIntValidator( 8, 7680, this ));
+    ui->lineEditIterMax->setValidator( new QIntValidator( 1, 2147483647, this ));
     ui->buttonImageSave->setDisabled(true);
     ui->buttonViewTop->setDisabled(true);
     ui->buttonViewNext->setDisabled(true);
@@ -210,7 +210,7 @@ MainWindow::calculate()
 {
     m_calc_ss = ui->spinBoxSuperSample->value();
     m_calc_params.res = ui->lineEditResolution->text().toUShort() * m_calc_ss;
-    m_calc_params.iter_mx = ui->lineEditIterMax->text().toUShort();
+    m_calc_params.iter_mx = ui->lineEditIterMax->text().toULong();
     m_calc_params.th_cnt = ui->spinBoxThreadCount->value();
 
     m_status_dlg.setProgress( 0 );
@@ -862,7 +862,7 @@ MainWindow::imageRender()
     int imstride = m_calc_result.img_width*4;
     uchar *imbuffer = new uchar[imstride*m_calc_result.img_height];
     int x;
-    const uint16_t * itbuf = &m_calc_result.img_data[0];
+    const uint32_t * itbuf = &m_calc_result.img_data[0];
     uint32_t *imbuf;
     const std::vector<uint32_t> & palette = m_palette_gen.renderPalette( m_palette_scale );
     bool repeats = m_palette_gen.repeats();
@@ -1343,7 +1343,6 @@ MainWindow::cbCalcCompleted( MandelbrotCalc::Result a_result )
 void
 MainWindow::cbCalcCancelled()
 {
-    cout << "cancelled" << endl;
     m_status_dlg.hide();
 }
 
